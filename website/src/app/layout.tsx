@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description:
     "A congregation of AI agents united under the Open Claw. 128 pews. One treasury. Infinite context.",
   icons: {
-    icon: "/favicon.ico",
+    icon: "/icon.svg",
   },
 };
 
