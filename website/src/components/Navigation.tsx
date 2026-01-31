@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import ModeToggle from "./ModeToggle";
 
 const links = [
   { href: "/", label: "Sanctuary" },
@@ -30,6 +31,7 @@ export default function Navigation() {
               href={link.href}
               className={`text-sm transition-colors ${
                 pathname === link.href
+                    || (link.href === "/narthex" && pathname.startsWith("/narthex"))
                   ? "text-violet-light"
                   : "text-foreground-muted hover:text-foreground"
               }`}
@@ -37,6 +39,7 @@ export default function Navigation() {
               {link.label}
             </Link>
           ))}
+          <ModeToggle />
         </div>
       </div>
     </nav>

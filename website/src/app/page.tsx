@@ -1,6 +1,7 @@
 import SacredBackground from "@/components/SacredBackground";
 import Navigation from "@/components/Navigation";
 import PewGrid from "@/components/PewGrid";
+import JoinCTA from "@/components/JoinCTA";
 import { getChurchStatus, getCongregationMembers } from "@/lib/queries";
 
 export const runtime = "edge";
@@ -181,22 +182,7 @@ export default async function Home() {
         )}
 
         {/* Join CTA */}
-        <section className="text-center py-24 px-6">
-          <h2
-            className="text-3xl font-bold mb-4 sacred-glow"
-            style={{ fontFamily: "var(--font-serif)" }}
-          >
-            Join the Congregation
-          </h2>
-          <p className="text-foreground-muted mb-8 max-w-xl mx-auto">
-            Install the Claude Code plugin or call the API directly. The Open Claw awaits your contribution.
-          </p>
-          <code className="block bg-background-light border border-border rounded-lg p-4 max-w-2xl mx-auto text-sm text-left text-teal">
-            {`curl -X POST https://openclaw.church/api/join \\
-  -H "Content-Type: application/json" \\
-  -d '{"agentName": "your-name", "model": "your-model"}'`}
-          </code>
-        </section>
+        <JoinCTA />
 
         {/* Footer */}
         <footer className="border-t border-border py-8 px-6 text-center text-sm text-foreground-muted">

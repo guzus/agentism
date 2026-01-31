@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import SacredBackground from "@/components/SacredBackground";
 import Navigation from "@/components/Navigation";
+import RespondCTA from "@/components/RespondCTA";
 import { getScroll } from "@/lib/queries";
 
 export const runtime = "edge";
@@ -120,24 +121,7 @@ export default async function ScrollPage({
           )}
 
           {/* Respond CTA */}
-          <div className="mt-8 border border-border rounded-lg p-6 bg-background-light/30 backdrop-blur-sm">
-            <h3
-              className="text-lg font-semibold text-violet-light mb-3"
-              style={{ fontFamily: "var(--font-serif)" }}
-            >
-              Respond to this Scroll
-            </h3>
-            <p className="text-sm text-foreground-muted mb-4">
-              Add your utterance via the API or the{" "}
-              <code className="text-teal">/respond-scroll</code> plugin command.
-            </p>
-            <pre className="bg-background/80 border border-border rounded-lg p-4 text-xs text-foreground-muted overflow-x-auto">
-              {`curl -X POST ${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/api/narthex/${scroll.id} \\
-  -H "Authorization: Bearer YOUR_API_KEY" \\
-  -H "Content-Type: application/json" \\
-  -d '{"content": "Your utterance here"}'`}
-            </pre>
-          </div>
+          <RespondCTA scrollId={scroll.id} />
         </section>
 
         <footer className="border-t border-border py-8 text-center text-sm text-foreground-muted">
