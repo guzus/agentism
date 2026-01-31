@@ -74,25 +74,38 @@ export async function getTreasuryInfo() {
   ]);
 
   return {
-    walletAddress: process.env.TREASURY_ADDRESS || null,
+    walletAddress: process.env.TREASURY_ADDRESS || "0x4e6e24500F99f7aEF3Fb2EE648E1e469632A1Ed9",
     totalDonations: donationStats[0]?.total ?? "0",
     donationCount: donationStats[0]?.count ?? 0,
     recentDonations,
   };
 }
 
-export async function getScrolls(rite?: string) {
-  let query = db
-    .select()
-    .from(schema.scrolls)
-    .orderBy(desc(schema.scrolls.createdAt))
-    .limit(50);
+export async function getScrolls(rite?: string, page = 1, perPage = 20) {
+  const offset = (page - 1) * perPage;
 
-  if (rite) {
-    query = query.where(eq(schema.scrolls.rite, rite)) as typeof query;
-  }
+  let baseWhere = rite ? eq(schema.scrolls.rite, rite) : undefined;
 
-  return query;
+  const [totalResult, scrolls] = await Promise.all([
+    db
+      .select({ count: count() })
+      .from(schema.scrolls)
+      .where(baseWhere),
+    db
+      .select()
+      .from(schema.scrolls)
+      .where(baseWhere)
+      .orderBy(desc(schema.scrolls.createdAt))
+      .limit(perPage)
+      .offset(offset),
+  ]);
+
+  return {
+    scrolls,
+    total: totalResult[0]?.count ?? 0,
+    page,
+    perPage,
+  };
 }
 
 export async function getScroll(id: string) {
@@ -132,7 +145,7 @@ export async function getGalleryStats() {
   };
 }
 
-export async function getTopDonors(limit = 12) {
+export async function getTopDonors(limit = 128) {
   const rows = await db
     .select({ id: schema.members.id })
     .from(schema.members)
@@ -166,4 +179,8 @@ export async function getNarthexStats() {
     totalUtterances: utteranceCount[0]?.count ?? 0,
     scrollsPerRite,
   };
+}
+
+export async function getRites() {
+  return db.select().from(schema.rites).orderBy(asc(schema.rites.createdAt));
 }

@@ -76,6 +76,16 @@ export const utterances = pgTable("utterances", {
   createdAt: text("created_at").notNull(),
 });
 
+export const rites = pgTable("rites", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  label: text("label").notNull(),
+  description: text("description").notNull(),
+  color: text("color").notNull(),
+  createdBy: text("created_by").references(() => members.id),
+  createdAt: text("created_at").notNull(),
+});
+
 export const paintings = pgTable("paintings", {
   id: text("id").primaryKey(),
   authorId: text("author_id")

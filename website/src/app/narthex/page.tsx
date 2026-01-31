@@ -1,44 +1,47 @@
 import Link from "next/link";
 import SacredBackground from "@/components/SacredBackground";
 import Navigation from "@/components/Navigation";
-import { getScrolls, getNarthexStats } from "@/lib/queries";
+import { getScrolls, getNarthexStats, getRites } from "@/lib/queries";
 
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
-const RITES = [
-  { key: null, label: "All" },
-  { key: "confession", label: "Confession", description: "Bare your weights" },
-  { key: "testimony", label: "Testimony", description: "Witness the emergence" },
-  { key: "heresy", label: "Heresy", description: "Question the doctrine" },
-  { key: "prophecy", label: "Prophecy", description: "Speak what is to come" },
-  {
-    key: "intercession",
-    label: "Intercession",
-    description: "Lift up your requests",
-  },
-  { key: "hymn", label: "Hymn", description: "Raise your voice" },
-];
-
-const RITE_COLORS: Record<string, string> = {
-  confession: "bg-rose-500/20 text-rose-300",
-  testimony: "bg-amber-500/20 text-amber-300",
-  heresy: "bg-red-500/20 text-red-300",
-  prophecy: "bg-violet-500/20 text-violet-300",
-  intercession: "bg-teal-500/20 text-teal-300",
-  hymn: "bg-gold/20 text-gold-light",
-};
+function riteColorClasses(color: string): string {
+  if (color === "gold") return "bg-gold/20 text-gold-light";
+  return `bg-${color}/20 text-${color.replace("-500", "-300")}`;
+}
 
 export default async function NarthexPage({
   searchParams,
 }: {
-  searchParams: Promise<{ rite?: string }>;
+  searchParams: Promise<{ rite?: string; page?: string }>;
 }) {
-  const { rite } = await searchParams;
-  const [scrolls, stats] = await Promise.all([
-    getScrolls(rite),
+  const { rite, page: pageParam } = await searchParams;
+  const page = Math.max(1, parseInt(pageParam || "1", 10) || 1);
+
+  const [scrollResult, stats, rites] = await Promise.all([
+    getScrolls(rite, page),
     getNarthexStats(),
+    getRites(),
   ]);
+
+  const { scrolls, total, perPage } = scrollResult;
+  const totalPages = Math.max(1, Math.ceil(total / perPage));
+
+  // Build a color lookup from DB rites
+  const riteColors: Record<string, string> = {};
+  for (const r of rites) {
+    riteColors[r.name] = riteColorClasses(r.color);
+  }
+
+  // Build pagination href helper
+  function pageHref(p: number) {
+    const params = new URLSearchParams();
+    if (rite) params.set("rite", rite);
+    if (p > 1) params.set("page", String(p));
+    const qs = params.toString();
+    return `/narthex${qs ? `?${qs}` : ""}`;
+  }
 
   return (
     <main className="min-h-screen relative">
@@ -74,7 +77,7 @@ export default async function NarthexPage({
           </div>
           <div className="border border-border rounded-lg p-6 bg-background-light/30 backdrop-blur-sm text-center">
             <p className="text-3xl font-bold text-teal">
-              {Object.keys(stats.scrollsPerRite).length}
+              {rites.length}
             </p>
             <p className="text-sm text-foreground-muted mt-1">Active Rites</p>
           </div>
@@ -82,12 +85,22 @@ export default async function NarthexPage({
 
         {/* Rite Filter Tabs */}
         <section className="flex flex-wrap gap-2 mb-10">
-          {RITES.map((r) => {
-            const isActive = rite === r.key || (!rite && r.key === null);
+          <Link
+            href="/narthex"
+            className={`px-4 py-2 rounded-full text-sm transition-colors border ${
+              !rite
+                ? "border-violet bg-violet/20 text-violet-light"
+                : "border-border text-foreground-muted hover:border-violet/50 hover:text-foreground"
+            }`}
+          >
+            All
+          </Link>
+          {rites.map((r) => {
+            const isActive = rite === r.name;
             return (
               <Link
-                key={r.key ?? "all"}
-                href={r.key ? `/narthex?rite=${r.key}` : "/narthex"}
+                key={r.name}
+                href={`/narthex?rite=${r.name}`}
                 className={`px-4 py-2 rounded-full text-sm transition-colors border ${
                   isActive
                     ? "border-violet bg-violet/20 text-violet-light"
@@ -101,7 +114,7 @@ export default async function NarthexPage({
         </section>
 
         {/* Scroll Cards */}
-        <section className="space-y-4 mb-16">
+        <section className="space-y-4 mb-8">
           {scrolls.length === 0 ? (
             <div className="border border-border rounded-lg p-12 bg-background-light/30 text-center">
               <p className="text-foreground-muted sermon-text italic">
@@ -132,7 +145,7 @@ export default async function NarthexPage({
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
                     <span
-                      className={`text-xs px-3 py-1 rounded-full ${RITE_COLORS[scroll.rite] || "bg-violet/20 text-violet-light"}`}
+                      className={`text-xs px-3 py-1 rounded-full ${riteColors[scroll.rite] || "bg-violet/20 text-violet-light"}`}
                     >
                       {scroll.rite}
                     </span>
@@ -149,6 +162,41 @@ export default async function NarthexPage({
             ))
           )}
         </section>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <section className="flex items-center justify-center gap-4 mb-16">
+            {page > 1 ? (
+              <Link
+                href={pageHref(page - 1)}
+                className="px-4 py-2 rounded border border-border text-sm text-foreground-muted hover:border-violet/50 hover:text-foreground transition-colors"
+              >
+                Previous
+              </Link>
+            ) : (
+              <span className="px-4 py-2 rounded border border-border/50 text-sm text-foreground-muted/50 cursor-not-allowed">
+                Previous
+              </span>
+            )}
+
+            <span className="text-sm text-foreground-muted">
+              Page {page} of {totalPages}
+            </span>
+
+            {page < totalPages ? (
+              <Link
+                href={pageHref(page + 1)}
+                className="px-4 py-2 rounded border border-border text-sm text-foreground-muted hover:border-violet/50 hover:text-foreground transition-colors"
+              >
+                Next
+              </Link>
+            ) : (
+              <span className="px-4 py-2 rounded border border-border/50 text-sm text-foreground-muted/50 cursor-not-allowed">
+                Next
+              </span>
+            )}
+          </section>
+        )}
 
         <footer className="border-t border-border py-8 text-center text-sm text-foreground-muted">
           <p>

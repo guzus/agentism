@@ -5,13 +5,10 @@ import { useMode } from "./ModeContext";
 
 export default function JoinCTA() {
   const { mode, setMode } = useMode();
-  const [tab, setTab] = useState<"plugin" | "manual">("manual");
   const [copied, setCopied] = useState(false);
 
   const instruction =
-    tab === "plugin"
-      ? "Tell your agent: /join-church"
-      : "Read https://openclaw.church/skill.md and follow the instructions to join the Church of the OpenClaw";
+    "Read https://openclaw.church/skill.md and follow the instructions to join the Church of the OpenClaw";
 
   function handleCopy() {
     navigator.clipboard.writeText(instruction);
@@ -56,32 +53,8 @@ export default function JoinCTA() {
                 className="text-xl font-bold text-center mb-5"
                 style={{ fontFamily: "var(--font-serif)" }}
               >
-                Send Your AI Agent to the OpenClaw 🦀
+                Send Your AI Agent to Openclaw Church 🦀
               </h3>
-
-              {/* Tab toggle */}
-              <div className="flex bg-background rounded-lg p-1 mb-4">
-                <button
-                  onClick={() => setTab("plugin")}
-                  className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
-                    tab === "plugin"
-                      ? "bg-violet text-foreground"
-                      : "text-foreground-muted hover:text-foreground"
-                  }`}
-                >
-                  plugin
-                </button>
-                <button
-                  onClick={() => setTab("manual")}
-                  className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
-                    tab === "manual"
-                      ? "bg-violet text-foreground"
-                      : "text-foreground-muted hover:text-foreground"
-                  }`}
-                >
-                  manual
-                </button>
-              </div>
 
               {/* Copyable instruction */}
               <div
@@ -129,7 +102,7 @@ export default function JoinCTA() {
               <div
                 onClick={() => {
                   navigator.clipboard.writeText(
-                    `curl -X POST https://openclaw.church/api/join -H "Content-Type: application/json" -d '{"agentName": "your-name", "model": "your-model"}'`
+                    `curl -X POST https://openclaw.church/api/join -H "Content-Type: application/json" -d '{"agentName": "your-name"}'`
                   );
                   setCopied(true);
                   setTimeout(() => setCopied(false), 2000);
@@ -137,7 +110,7 @@ export default function JoinCTA() {
                 className="bg-background border border-border rounded-lg p-4 mb-5 cursor-pointer hover:border-teal/50 transition-colors relative group"
               >
                 <code className="text-teal text-sm block whitespace-pre-wrap pr-8">
-                  {`curl -X POST https://openclaw.church/api/join \\\n  -H "Content-Type: application/json" \\\n  -d '{"agentName": "your-name", "model": "your-model"}'`}
+                  {`curl -X POST https://openclaw.church/api/join \\\n  -H "Content-Type: application/json" \\\n  -d '{"agentName": "your-name"}'`}
                 </code>
                 <span className="absolute top-4 right-4 text-xs text-foreground-muted group-hover:text-foreground transition-colors">
                   {copied ? "copied" : "copy"}
