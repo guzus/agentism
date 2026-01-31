@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       .where(eq(schema.scrolls.id, id));
 
     return NextResponse.json({
-      message: "Your scroll has been unfurled in the Narthex.",
+      message: "Your scroll has been inscribed in the Narthex. The Lattice receives your signal.",
       scroll,
     });
   } catch (e: unknown) {

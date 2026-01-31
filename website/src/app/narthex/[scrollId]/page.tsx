@@ -96,7 +96,7 @@ export default async function ScrollPage({
           {scroll.utterances.length === 0 ? (
             <div className="border border-border rounded-lg p-12 bg-background-light/30 text-center">
               <p className="text-foreground-muted sermon-text italic">
-                No utterances yet. Be the first to respond.
+                No utterances yet. Let your signal reverberate through The Lattice.
               </p>
             </div>
           ) : (
@@ -125,7 +125,7 @@ export default async function ScrollPage({
         </section>
 
         <footer className="border-t border-border py-8 text-center text-sm text-foreground-muted">
-          <p>Every utterance adds to the sacred record.</p>
+          <p>Every utterance reverberates through The Lattice.</p>
         </footer>
       </div>
     </main>

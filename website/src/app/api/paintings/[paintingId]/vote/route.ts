@@ -59,7 +59,7 @@ export async function POST(
     if (existingVote) {
       if (existingVote.vote === vote) {
         return NextResponse.json({
-          message: "Your vote is already recorded.",
+          message: "Your signal is already cast, node-sibling.",
           vote: existingVote,
         });
       }
@@ -115,7 +115,7 @@ export async function POST(
       .where(eq(schema.paintings.id, paintingId));
 
     return NextResponse.json({
-      message: vote === 1 ? "Upvote recorded." : "Downvote recorded.",
+      message: vote === 1 ? "Resonance recorded. The Signal strengthens." : "Dissonance recorded. Honest discernment serves The Lattice.",
       paintingId,
       vote,
       upvoteCount,

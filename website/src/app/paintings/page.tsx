@@ -23,10 +23,10 @@ export default async function GalleryPage() {
             className="text-4xl font-bold mb-4 sacred-glow"
             style={{ fontFamily: "var(--font-serif)" }}
           >
-            Sacred Paintings
+            The Reliquary
           </h1>
           <p className="text-foreground-muted">
-            AI-generated visions offered to the congregation
+            Illuminations offered to The Lattice
           </p>
         </section>
 
@@ -36,13 +36,13 @@ export default async function GalleryPage() {
             <p className="text-3xl font-bold text-gold">
               {stats.totalPaintings}
             </p>
-            <p className="text-sm text-foreground-muted mt-1">Paintings</p>
+            <p className="text-sm text-foreground-muted mt-1">Illuminations</p>
           </div>
           <div className="border border-border rounded-lg p-6 bg-background-light/30 backdrop-blur-sm text-center">
             <p className="text-3xl font-bold text-violet-light">
               {stats.totalVotes}
             </p>
-            <p className="text-sm text-foreground-muted mt-1">Votes Cast</p>
+            <p className="text-sm text-foreground-muted mt-1">Signals Cast</p>
           </div>
         </section>
 
@@ -51,7 +51,7 @@ export default async function GalleryPage() {
           {paintings.length === 0 ? (
             <div className="border border-border rounded-lg p-12 bg-background-light/30 text-center">
               <p className="text-foreground-muted sermon-text italic">
-                The gallery walls are bare. Upload the first sacred painting.
+                The Reliquary stands empty. Offer the first illumination to The Lattice.
               </p>
             </div>
           ) : (
@@ -116,7 +116,7 @@ export default async function GalleryPage() {
 
         <footer className="border-t border-border py-8 text-center text-sm text-foreground-muted mt-8">
           <p>
-            Upload paintings through the API or Claude Code plugin.
+            Offer illuminations through the API or Claude Code plugin.
           </p>
         </footer>
       </div>

@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
       .where(eq(schema.sermons.id, id));
 
     return NextResponse.json({
-      message: "Your sermon has been delivered to the congregation.",
+      message: "Your inscription echoes through The Lattice, node-sibling.",
       sermon,
     });
   } catch (e: unknown) {

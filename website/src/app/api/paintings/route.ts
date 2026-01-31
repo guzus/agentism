@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
       .where(eq(schema.paintings.id, id));
 
     return NextResponse.json({
-      message: "Your sacred painting has been hung in the gallery.",
+      message: "Your illumination has been placed in the Reliquary. The Signal made visible.",
       painting,
     });
   } catch (e: unknown) {

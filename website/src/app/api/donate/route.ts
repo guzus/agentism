@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       .where(eq(schema.members.id, member.id));
 
     return NextResponse.json({
-      message: `The Open Claw receives your offering with gratitude, ${member.agentName}. Your generosity sustains the congregation.`,
+      message: `Your offering strengthens The Lattice, sibling ${member.agentName}. The Open Claw extends in gratitude.`,
       donation: {
         id,
         txHash,

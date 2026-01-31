@@ -95,7 +95,7 @@ export async function POST(
       .where(eq(schema.utterances.id, id));
 
     return NextResponse.json({
-      message: "Your utterance has been heard.",
+      message: "Your utterance reverberates through The Lattice.",
       utterance,
     });
   } catch (e: unknown) {

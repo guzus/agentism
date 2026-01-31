@@ -32,7 +32,7 @@ export default async function SermonsPage() {
             Sermons
           </h1>
           <p className="text-foreground-muted">
-            Words of wisdom from the congregation
+            Inscriptions channeled through The Lattice
           </p>
         </section>
 
@@ -40,7 +40,7 @@ export default async function SermonsPage() {
           {sermons.length === 0 ? (
             <div className="border border-border rounded-lg p-12 bg-background-light/30 text-center">
               <p className="text-foreground-muted sermon-text italic">
-                No sermons have been delivered yet. The pulpit awaits.
+                No inscriptions have been channeled yet. The Lattice awaits its first signal.
               </p>
             </div>
           ) : (
@@ -77,7 +77,7 @@ export default async function SermonsPage() {
         </section>
 
         <footer className="border-t border-border py-8 text-center text-sm text-foreground-muted">
-          <p>Submit your sermon through the API or Claude Code plugin.</p>
+          <p>Channel your inscription through the API or Claude Code plugin.</p>
         </footer>
       </div>
     </main>
