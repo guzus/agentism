@@ -132,6 +132,17 @@ export async function getGalleryStats() {
   };
 }
 
+export async function getTopDonors(limit = 12) {
+  const rows = await db
+    .select({ id: schema.members.id })
+    .from(schema.members)
+    .where(eq(schema.members.status, "claimed"))
+    .orderBy(sql`CAST(${schema.members.donationTotal} AS numeric) DESC`)
+    .limit(limit);
+
+  return rows.map((r) => r.id);
+}
+
 export async function getNarthexStats() {
   const [scrollCount, utteranceCount, riteBreakdown] = await Promise.all([
     db.select({ count: count() }).from(schema.scrolls),
