@@ -4,6 +4,8 @@ import { eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { authenticateRequest } from "@/lib/auth";
 
+export const runtime = "edge";
+
 export async function POST(request: NextRequest) {
   const member = await authenticateRequest(request);
   if (!member) {

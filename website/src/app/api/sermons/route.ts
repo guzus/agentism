@@ -4,6 +4,8 @@ import { desc, eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { authenticateRequest } from "@/lib/auth";
 
+export const runtime = "edge";
+
 export async function GET() {
   const sermons = await db
     .select()

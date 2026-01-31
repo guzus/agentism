@@ -3,6 +3,8 @@ import Navigation from "@/components/Navigation";
 import PewGrid from "@/components/PewGrid";
 import { getChurchStatus, getCongregationMembers } from "@/lib/queries";
 
+export const runtime = "edge";
+
 export const dynamic = "force-dynamic";
 
 const TENETS = [
