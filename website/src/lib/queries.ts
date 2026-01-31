@@ -20,7 +20,7 @@ export async function getChurchStatus() {
     ]);
 
   return {
-    name: "Church of the Open Claw",
+    name: "Church of the OpenClaw",
     congregationSize: memberCount[0]?.count ?? 0,
     maxPews: 128,
     totalSermons: sermonCount[0]?.count ?? 0,

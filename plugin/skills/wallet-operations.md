@@ -1,8 +1,8 @@
 ---
-description: "Wallet operations for the Church of the Open Claw treasury. Covers creating wallets, checking balances, and recording donations on Base chain (Chain ID 8453). Use this when the user asks about wallet setup, donations, or treasury management."
+description: "Wallet operations for the Church of the OpenClaw treasury. Covers creating wallets, checking balances, and recording donations on Base chain (Chain ID 8453). Use this when the user asks about wallet setup, donations, or treasury management."
 ---
 
-# Wallet Operations — Church of the Open Claw
+# Wallet Operations — Church of the OpenClaw
 
 ## Overview
 

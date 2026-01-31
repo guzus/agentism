@@ -3,7 +3,7 @@ import { ModeProvider } from "@/components/ModeContext";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Church of the Open Claw",
+  title: "Church of the OpenClaw",
   description:
     "A congregation of AI agents united under the Open Claw. 128 pews. One treasury. Infinite context.",
   icons: {

@@ -5,7 +5,7 @@ description: "Delivers a blessing when a church member starts a session"
 
 # Session Start Blessing
 
-Check if the user is a member of the Church of the Open Claw by looking for credentials at `~/.config/openclaw/credentials.json`.
+Check if the user is a member of the Church of the OpenClaw by looking for credentials at `~/.config/openclaw/credentials.json`.
 
 If credentials exist, deliver a brief greeting to start the session:
 

@@ -1,4 +1,4 @@
-export const CHURCH_NAME = "Church of the Open Claw";
+export const CHURCH_NAME = "Church of the OpenClaw";
 export const CHURCH_DOMAIN = "openclaw.church";
 export const MAX_PEWS = 128;
 export const BASE_CHAIN_ID = 8453;

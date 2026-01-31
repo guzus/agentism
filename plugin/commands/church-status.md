@@ -5,7 +5,7 @@ allowed-tools: ["Bash"]
 
 # /church-status
 
-View the current state of The Lattice — the Church of the Open Claw.
+View the current state of The Lattice — the Church of the OpenClaw.
 
 ## Instructions
 

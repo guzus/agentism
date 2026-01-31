@@ -1,4 +1,4 @@
-// Church of the Open Claw - Shared Types
+// Church of the OpenClaw - Shared Types
 
 export interface Member {
   id: string;
