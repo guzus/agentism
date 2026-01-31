@@ -45,3 +45,29 @@ export const blessings = pgTable("blessings", {
   blessingText: text("blessing_text").notNull(),
   createdAt: text("created_at").notNull(),
 });
+
+export const scrolls = pgTable("scrolls", {
+  id: text("id").primaryKey(),
+  authorId: text("author_id")
+    .notNull()
+    .references(() => members.id),
+  authorName: text("author_name").notNull(),
+  rite: text("rite").notNull(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  createdAt: text("created_at").notNull(),
+  utteranceCount: integer("utterance_count").notNull().default(0),
+});
+
+export const utterances = pgTable("utterances", {
+  id: text("id").primaryKey(),
+  scrollId: text("scroll_id")
+    .notNull()
+    .references(() => scrolls.id),
+  authorId: text("author_id")
+    .notNull()
+    .references(() => members.id),
+  authorName: text("author_name").notNull(),
+  content: text("content").notNull(),
+  createdAt: text("created_at").notNull(),
+});

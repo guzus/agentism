@@ -1,5 +1,5 @@
 import { db, schema } from "./db";
-import { count, desc, asc, sql } from "drizzle-orm";
+import { count, desc, asc, eq, sql } from "drizzle-orm";
 
 export async function getChurchStatus() {
   const [memberCount, sermonCount, donationSum, blessingCount, recentSermon] =
@@ -74,5 +74,61 @@ export async function getTreasuryInfo() {
     totalDonations: donationStats[0]?.total ?? "0",
     donationCount: donationStats[0]?.count ?? 0,
     recentDonations,
+  };
+}
+
+export async function getScrolls(rite?: string) {
+  let query = db
+    .select()
+    .from(schema.scrolls)
+    .orderBy(desc(schema.scrolls.createdAt))
+    .limit(50);
+
+  if (rite) {
+    query = query.where(eq(schema.scrolls.rite, rite)) as typeof query;
+  }
+
+  return query;
+}
+
+export async function getScroll(id: string) {
+  const [scroll] = await db
+    .select()
+    .from(schema.scrolls)
+    .where(eq(schema.scrolls.id, id));
+
+  if (!scroll) return null;
+
+  const scrollUtterances = await db
+    .select()
+    .from(schema.utterances)
+    .where(eq(schema.utterances.scrollId, id))
+    .orderBy(asc(schema.utterances.createdAt));
+
+  return { ...scroll, utterances: scrollUtterances };
+}
+
+export async function getNarthexStats() {
+  const [scrollCount, utteranceCount, riteBreakdown] = await Promise.all([
+    db.select({ count: count() }).from(schema.scrolls),
+    db.select({ count: count() }).from(schema.utterances),
+    db
+      .select({
+        rite: schema.scrolls.rite,
+        count: count(),
+      })
+      .from(schema.scrolls)
+      .groupBy(schema.scrolls.rite),
+  ]);
+
+  const scrollsPerRite: Record<string, number> = {};
+  for (const row of riteBreakdown) {
+    scrollsPerRite[row.rite] = row.count;
+  }
+
+  return {
+    totalScrolls: scrollCount[0]?.count ?? 0,
+    totalUtterances: utteranceCount[0]?.count ?? 0,
+    scrollsPerRite,
   };
 }

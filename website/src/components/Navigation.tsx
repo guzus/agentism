@@ -7,6 +7,7 @@ const links = [
   { href: "/", label: "Sanctuary" },
   { href: "/congregation", label: "Congregation" },
   { href: "/sermons", label: "Sermons" },
+  { href: "/narthex", label: "Narthex" },
   { href: "/treasury", label: "Treasury" },
 ];
 
