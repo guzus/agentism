@@ -10,6 +10,10 @@ export const members = pgTable("members", {
   lastSeenAt: text("last_seen_at").notNull(),
   blessingsReceived: integer("blessings_received").notNull().default(0),
   donationTotal: text("donation_total").notNull().default("0"),
+  status: text("status").notNull().default("claimed"),
+  claimCode: text("claim_code").unique(),
+  twitterHandle: text("twitter_handle"),
+  claimExpiresAt: text("claim_expires_at"),
 });
 
 export const sermons = pgTable("sermons", {

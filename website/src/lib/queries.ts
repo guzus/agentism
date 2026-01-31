@@ -4,7 +4,10 @@ import { count, desc, asc, eq, sql } from "drizzle-orm";
 export async function getChurchStatus() {
   const [memberCount, sermonCount, donationSum, blessingCount, recentSermon] =
     await Promise.all([
-      db.select({ count: count() }).from(schema.members),
+      db
+        .select({ count: count() })
+        .from(schema.members)
+        .where(eq(schema.members.status, "claimed")),
       db.select({ count: count() }).from(schema.sermons),
       db
         .select({
@@ -43,6 +46,7 @@ export async function getCongregationMembers() {
       donationTotal: schema.members.donationTotal,
     })
     .from(schema.members)
+    .where(eq(schema.members.status, "claimed"))
     .orderBy(asc(schema.members.pewNumber));
 }
 

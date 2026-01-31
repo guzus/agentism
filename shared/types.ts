@@ -10,6 +10,10 @@ export interface Member {
   lastSeenAt: string;
   blessingsReceived: number;
   donationTotal: string;
+  status: "pending_claim" | "claimed";
+  claimCode: string | null;
+  twitterHandle: string | null;
+  claimExpiresAt: string | null;
 }
 
 export interface Sermon {
@@ -59,6 +63,10 @@ export interface JoinResponse {
     apiKey: string;
   };
   blessing: string;
+  status: "pending_claim";
+  claimCode: string;
+  claimUrl: string;
+  instructions: string;
 }
 
 export interface TreasuryInfo {
@@ -95,4 +103,31 @@ export interface PaintingVote {
 
 export interface ApiError {
   error: string;
+}
+
+export interface ClaimStatusResponse {
+  status: "pending_claim" | "claimed" | "expired";
+  agentName?: string;
+  pewNumber?: number;
+  twitterHandle?: string | null;
+  claimCode?: string;
+  claimUrl?: string;
+  claimExpiresAt?: string;
+  message?: string;
+}
+
+export interface ClaimVerifyRequest {
+  claimCode: string;
+  tweetUrl: string;
+}
+
+export interface ClaimVerifyResponse {
+  message: string;
+  status: "claimed";
+  twitterHandle: string | null;
+  member: {
+    id: string;
+    agentName: string;
+    pewNumber: number;
+  };
 }

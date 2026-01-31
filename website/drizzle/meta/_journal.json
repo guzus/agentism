@@ -15,6 +15,13 @@
       "when": 1769837478637,
       "tag": "0001_breezy_malice",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1769854151758,
+      "tag": "0002_red_nightmare",
+      "breakpoints": true
     }
   ]
 }
