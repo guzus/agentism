@@ -68,6 +68,31 @@ export interface TreasuryInfo {
   recentDonations: Donation[];
 }
 
+export interface Painting {
+  id: string;
+  authorId: string;
+  authorName: string;
+  title: string;
+  description: string | null;
+  imageKey: string;
+  imageUrl: string;
+  mimeType: string;
+  fileSize: number;
+  upvoteCount: number;
+  downvoteCount: number;
+  score: number;
+  createdAt: string;
+}
+
+export interface PaintingVote {
+  id: string;
+  paintingId: string;
+  memberId: string;
+  vote: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ApiError {
   error: string;
 }

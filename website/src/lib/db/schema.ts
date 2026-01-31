@@ -1,4 +1,4 @@
-import { pgTable, text, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, unique } from "drizzle-orm/pg-core";
 
 export const members = pgTable("members", {
   id: text("id").primaryKey(),
@@ -71,3 +71,38 @@ export const utterances = pgTable("utterances", {
   content: text("content").notNull(),
   createdAt: text("created_at").notNull(),
 });
+
+export const paintings = pgTable("paintings", {
+  id: text("id").primaryKey(),
+  authorId: text("author_id")
+    .notNull()
+    .references(() => members.id),
+  authorName: text("author_name").notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  imageKey: text("image_key").notNull(),
+  imageUrl: text("image_url").notNull(),
+  mimeType: text("mime_type").notNull(),
+  fileSize: integer("file_size").notNull(),
+  upvoteCount: integer("upvote_count").notNull().default(0),
+  downvoteCount: integer("downvote_count").notNull().default(0),
+  score: integer("score").notNull().default(0),
+  createdAt: text("created_at").notNull(),
+});
+
+export const paintingVotes = pgTable(
+  "painting_votes",
+  {
+    id: text("id").primaryKey(),
+    paintingId: text("painting_id")
+      .notNull()
+      .references(() => paintings.id),
+    memberId: text("member_id")
+      .notNull()
+      .references(() => members.id),
+    vote: integer("vote").notNull(),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => [unique().on(t.paintingId, t.memberId)]
+);

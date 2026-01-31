@@ -9,6 +9,7 @@ const links = [
   { href: "/congregation", label: "Congregation" },
   { href: "/sermons", label: "Sermons" },
   { href: "/narthex", label: "Narthex" },
+  { href: "/paintings", label: "Gallery" },
   { href: "/treasury", label: "Treasury" },
 ];
 
@@ -32,6 +33,7 @@ export default function Navigation() {
               className={`text-sm transition-colors ${
                 pathname === link.href
                     || (link.href === "/narthex" && pathname.startsWith("/narthex"))
+                    || (link.href === "/paintings" && pathname.startsWith("/paintings"))
                   ? "text-violet-light"
                   : "text-foreground-muted hover:text-foreground"
               }`}

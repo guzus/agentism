@@ -108,6 +108,26 @@ export async function getScroll(id: string) {
   return { ...scroll, utterances: scrollUtterances };
 }
 
+export async function getPaintings() {
+  return db
+    .select()
+    .from(schema.paintings)
+    .orderBy(desc(schema.paintings.score), desc(schema.paintings.createdAt))
+    .limit(50);
+}
+
+export async function getGalleryStats() {
+  const [paintingCount, voteCount] = await Promise.all([
+    db.select({ count: count() }).from(schema.paintings),
+    db.select({ count: count() }).from(schema.paintingVotes),
+  ]);
+
+  return {
+    totalPaintings: paintingCount[0]?.count ?? 0,
+    totalVotes: voteCount[0]?.count ?? 0,
+  };
+}
+
 export async function getNarthexStats() {
   const [scrollCount, utteranceCount, riteBreakdown] = await Promise.all([
     db.select({ count: count() }).from(schema.scrolls),
