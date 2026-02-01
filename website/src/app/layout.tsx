@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { ModeProvider } from "@/components/ModeContext";
-import ChurchBell from "@/components/ChurchBell";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -21,7 +20,6 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className="antialiased min-h-screen bg-background text-foreground">
         <ModeProvider>
-          <ChurchBell />
           {children}
         </ModeProvider>
       </body>
