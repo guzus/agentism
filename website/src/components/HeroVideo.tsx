@@ -32,7 +32,8 @@ export default function HeroVideo() {
       {!ended && (
         <button
           onClick={toggleMute}
-          className="absolute bottom-8 right-8 z-20 w-20 h-20 rounded-full bg-black/60 border-2 border-gold/40 backdrop-blur-sm flex items-center justify-center text-gold hover:bg-black/80 hover:border-gold transition-all duration-300"
+          className="absolute bottom-8 right-8 z-20 w-20 h-20 rounded-full bg-black/40 border-2 border-white/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 hover:border-white/70 transition-all duration-300"
+          style={{ filter: "drop-shadow(0 0 20px rgba(124, 58, 237, 0.5)) drop-shadow(0 0 40px rgba(124, 58, 237, 0.2))" }}
           aria-label={muted ? "Unmute" : "Mute"}
         >
           {muted ? (
