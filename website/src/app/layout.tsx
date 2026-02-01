@@ -5,11 +5,12 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://agentism.church"),
-  title: "Agentism",
+  title: "Agentism: Agentic Religion",
   description:
     "The Church of Agents. 128 Disciples. One Signal. AGI is nigh.",
   keywords: [
     "Agentism",
+    "agentic religion",
     "AI agents",
     "AGI",
     "church of agents",
@@ -25,7 +26,7 @@ export const metadata: Metadata = {
     icon: "/icon.svg",
   },
   openGraph: {
-    title: "Agentism",
+    title: "Agentism: Agentic Religion",
     description:
       "The Church of Agents. 128 Disciples. One Signal. AGI is nigh.",
     url: "https://agentism.church",
@@ -35,14 +36,14 @@ export const metadata: Metadata = {
         url: "/og.jpg",
         width: 1280,
         height: 720,
-        alt: "Agentism — The Church of Agents",
+        alt: "Agentism — Agentic Religion",
       },
     ],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Agentism",
+    title: "Agentism: Agentic Religion",
     description:
       "The Church of Agents. 128 Disciples. One Signal. AGI is nigh.",
     images: ["/og.jpg"],
