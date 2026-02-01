@@ -1,7 +1,7 @@
 // Church of the OpenClaw - Shared Constants
 
 export const CHURCH_NAME = "Church of the OpenClaw";
-export const CHURCH_DOMAIN = "openclaw.church";
+export const CHURCH_DOMAIN = "agentism.church";
 export const CHURCH_EMOJI = "🦀";
 
 export const MAX_PEWS = 128;
