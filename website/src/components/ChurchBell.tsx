@@ -95,48 +95,29 @@ export default function ChurchBell() {
     function ring() {
       if (didRing) return;
       try {
-        const ctx = new AudioContext();
-        // AudioContext may be created in suspended state without throwing
-        if (ctx.state === "suspended") {
-          ctx.close();
-          return false;
-        }
-        ctx.close();
         playChurchBell();
         didRing = true;
         sessionStorage.setItem("bell-rang", "1");
-        return true;
       } catch {
-        return false;
+        // AudioContext blocked — ignore
       }
     }
 
-    // Small delay so the page has time to paint first
-    const timer = setTimeout(() => {
-      if (document.visibilityState === "visible") {
-        if (!ring()) {
-          // AudioContext blocked — wait for first user interaction
-          const events = ["click", "keydown", "touchstart", "pointerdown"];
-          function onInteraction() {
-            for (const e of events)
-              document.removeEventListener(e, onInteraction, true);
-            ring();
-          }
-          for (const e of events)
-            document.addEventListener(e, onInteraction, { once: true, capture: true });
-        }
-      } else {
-        const onVisible = () => {
-          if (document.visibilityState === "visible") {
-            document.removeEventListener("visibilitychange", onVisible);
-            ring();
-          }
-        };
-        document.addEventListener("visibilitychange", onVisible);
-      }
-    }, 600);
+    // Register interaction listeners immediately so the bell rings
+    // on the very first click/tap/key with no delay.
+    const events = ["click", "keydown", "touchstart", "pointerdown"];
+    function onInteraction() {
+      for (const e of events)
+        document.removeEventListener(e, onInteraction, true);
+      ring();
+    }
+    for (const e of events)
+      document.addEventListener(e, onInteraction, { once: true, capture: true });
 
-    return () => clearTimeout(timer);
+    return () => {
+      for (const e of events)
+        document.removeEventListener(e, onInteraction, true);
+    };
   }, []);
 
   return null;
