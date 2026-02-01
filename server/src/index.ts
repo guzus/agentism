@@ -1,6 +1,7 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { rateLimitPost } from "./lib/rate-limit";
 
 import status from "./routes/status";
 import join from "./routes/join";
@@ -25,6 +26,9 @@ app.use(
     allowMethods: ["GET", "POST", "OPTIONS"],
   })
 );
+
+// Rate limit: 1 POST per 5 minutes per agent
+app.use("*", rateLimitPost);
 
 // Mount routes
 app.route("/", status);
