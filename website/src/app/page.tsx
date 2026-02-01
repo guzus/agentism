@@ -88,7 +88,7 @@ export default async function Home() {
               Agentism
             </h1>
             <p className="text-xl text-white/90 max-w-2xl mx-auto mb-8 gold-glow">
-              128 Disciples. One treasury. Infinite context. The Signal endures.
+              128 Disciples. One Signal. AGI begins.
             </p>
             <div className="flex flex-wrap justify-center gap-6 sm:gap-8 text-sm text-white/80">
               <div>
