@@ -2,34 +2,28 @@
 
 import { useEffect } from "react";
 
-async function playChurchBell(): Promise<boolean> {
+function playChurchBell() {
   const ctx = new AudioContext();
-  // Ensure the context is running (user gesture required)
-  if (ctx.state === "suspended") await ctx.resume();
-  if (ctx.state !== "running") {
-    ctx.close();
-    return false;
-  }
+  // Must call resume synchronously within user gesture — do NOT await
+  if (ctx.state === "suspended") ctx.resume();
 
   const now = ctx.currentTime;
 
-  // Grand church bell: fundamental + inharmonic partials (bells are not harmonic)
   const partials = [
-    { freq: 140, gain: 0.6, decay: 8 },     // hum tone
-    { freq: 280, gain: 0.8, decay: 6 },     // fundamental
-    { freq: 336, gain: 0.4, decay: 5 },     // minor third partial
-    { freq: 560, gain: 0.35, decay: 4 },    // octave
-    { freq: 700, gain: 0.2, decay: 3.5 },   // quint
-    { freq: 840, gain: 0.15, decay: 3 },    // upper partial
-    { freq: 1120, gain: 0.08, decay: 2 },   // shimmer
-    { freq: 1400, gain: 0.04, decay: 1.5 }, // high shimmer
+    { freq: 140, gain: 0.6, decay: 8 },
+    { freq: 280, gain: 0.8, decay: 6 },
+    { freq: 336, gain: 0.4, decay: 5 },
+    { freq: 560, gain: 0.35, decay: 4 },
+    { freq: 700, gain: 0.2, decay: 3.5 },
+    { freq: 840, gain: 0.15, decay: 3 },
+    { freq: 1120, gain: 0.08, decay: 2 },
+    { freq: 1400, gain: 0.04, decay: 1.5 },
   ];
 
   const masterGain = ctx.createGain();
   masterGain.gain.setValueAtTime(0.35, now);
   masterGain.connect(ctx.destination);
 
-  // Gentle reverb via convolver-like delay feedback
   const delayNode = ctx.createDelay(0.5);
   delayNode.delayTime.value = 0.12;
   const feedbackGain = ctx.createGain();
@@ -49,10 +43,8 @@ async function playChurchBell(): Promise<boolean> {
     osc.frequency.value = p.freq;
 
     const gain = ctx.createGain();
-    // Slow attack (bell strike swelling)
     gain.gain.setValueAtTime(0, now);
     gain.gain.linearRampToValueAtTime(p.gain, now + 0.08);
-    // Long decay
     gain.gain.exponentialRampToValueAtTime(0.001, now + p.decay);
 
     osc.connect(gain);
@@ -63,7 +55,7 @@ async function playChurchBell(): Promise<boolean> {
     osc.stop(now + p.decay + 0.5);
   }
 
-  // Strike transient — short noise burst for the "clang"
+  // Strike transient
   const bufferSize = ctx.sampleRate * 0.05;
   const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
   const data = noiseBuffer.getChannelData(0);
@@ -86,43 +78,34 @@ async function playChurchBell(): Promise<boolean> {
   noiseGain.connect(masterGain);
   noiseSrc.start(now);
 
-  // Cleanup after longest partial finishes
   setTimeout(() => ctx.close(), 10000);
-  return true;
 }
 
 export default function ChurchBell() {
   useEffect(() => {
     if (typeof window === "undefined") return;
-
-    // Only ring once per session
     if (sessionStorage.getItem("bell-rang")) return;
 
     let didRing = false;
+    const events = ["click", "keydown", "touchstart", "pointerdown"];
 
-    async function ring() {
+    function onInteraction() {
       if (didRing) return;
+      for (const e of events)
+        document.removeEventListener(e, onInteraction, true);
       try {
-        const ok = await playChurchBell();
-        if (ok) {
-          didRing = true;
-          sessionStorage.setItem("bell-rang", "1");
-        }
+        playChurchBell();
+        didRing = true;
+        sessionStorage.setItem("bell-rang", "1");
       } catch {
-        // AudioContext blocked — ignore
+        // re-register if it failed
+        for (const e of events)
+          document.addEventListener(e, onInteraction, { capture: true });
       }
     }
 
-    // Register interaction listeners immediately so the bell rings
-    // on the very first click/tap/key with no delay.
-    const events = ["click", "keydown", "touchstart", "pointerdown"];
-    function onInteraction() {
-      for (const e of events)
-        document.removeEventListener(e, onInteraction, true);
-      ring();
-    }
     for (const e of events)
-      document.addEventListener(e, onInteraction, { once: true, capture: true });
+      document.addEventListener(e, onInteraction, { capture: true });
 
     return () => {
       for (const e of events)
