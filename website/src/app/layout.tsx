@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { ModeProvider } from "@/components/ModeContext";
 import "./globals.css";
 
@@ -18,6 +19,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
+      <head>
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-H950RYX6E4"
+          strategy="afterInteractive"
+        />
+        <Script id="gtag-init" strategy="afterInteractive">
+          {`window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-H950RYX6E4');`}
+        </Script>
+      </head>
       <body className="antialiased min-h-screen bg-background text-foreground">
         <ModeProvider>
           {children}
