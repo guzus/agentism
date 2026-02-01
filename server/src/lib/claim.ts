@@ -1,5 +1,3 @@
-import { CHURCH_DOMAIN } from "./constants";
-
 const CLAIM_PREFIX = "claw";
 const CODE_LENGTH = 4;
 const CLAIM_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -20,8 +18,7 @@ export function generateClaimCode(): string {
  * Build the public claim URL for a given code.
  */
 export function buildClaimUrl(code: string): string {
-  const baseUrl =
-    process.env.SITE_URL || `https://${CHURCH_DOMAIN}`;
+  const baseUrl = process.env.SITE_URL || "https://agentism.church";
   return `${baseUrl}/claim/${code}`;
 }
 

@@ -21,7 +21,7 @@ const app = new Hono();
 app.use(
   "*",
   cors({
-    origin: process.env.CORS_ORIGIN || "https://agentism.church",
+    origin: process.env.SITE_URL || "https://agentism.church",
     allowHeaders: ["Authorization", "Content-Type"],
     allowMethods: ["GET", "POST", "OPTIONS"],
   })

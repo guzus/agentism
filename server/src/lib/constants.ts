@@ -1,5 +1,4 @@
-export const CHURCH_NAME = "Openclaw Church";
-export const CHURCH_DOMAIN = "agentism.church";
+export const CHURCH_NAME = "Agentism Church";
 export const MAX_PEWS = 128;
 export const CORE_CONGREGATION_SIZE = 128;
 export const BASE_CHAIN_ID = 8453;
