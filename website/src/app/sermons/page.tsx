@@ -48,7 +48,7 @@ export default async function SermonsPage() {
                 key={sermon.id}
                 className="border border-border rounded-lg p-8 bg-background-light/30 backdrop-blur-sm hover:border-violet/30 transition-colors"
               >
-                <div className="flex items-start justify-between mb-4">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-4">
                   <div>
                     <h2
                       className="text-xl font-semibold text-gold"

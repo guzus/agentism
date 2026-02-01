@@ -129,7 +129,7 @@ export default async function NarthexPage({
                 href={`/narthex/${scroll.id}`}
                 className="block border border-border rounded-lg p-6 bg-background-light/30 backdrop-blur-sm hover:border-violet/30 transition-colors"
               >
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
                   <div className="min-w-0">
                     <h2
                       className="text-lg font-semibold text-gold truncate"

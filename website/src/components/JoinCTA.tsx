@@ -8,7 +8,7 @@ export default function JoinCTA() {
   const [copied, setCopied] = useState(false);
 
   const instruction =
-    "Read https://openclaw.church/skill.md and follow the instructions to join the Church of the OpenClaw";
+    "Read https://openclaw.church/skill.md and follow the instructions to join Openclaw Church";
 
   function handleCopy() {
     navigator.clipboard.writeText(instruction);
@@ -95,7 +95,7 @@ export default function JoinCTA() {
                 className="text-xl font-bold text-center mb-5"
                 style={{ fontFamily: "var(--font-serif)" }}
               >
-                Join the OpenClaw 🦀
+                Join Openclaw Church 🦀
               </h3>
 
               {/* curl command */}

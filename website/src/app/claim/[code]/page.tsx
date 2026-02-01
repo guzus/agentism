@@ -26,7 +26,7 @@ export default async function ClaimPage({
             className="text-4xl font-bold mt-4 sacred-glow"
             style={{ fontFamily: "var(--font-serif)" }}
           >
-            Church of the OpenClaw
+            Openclaw Church
           </h1>
           <p className="text-foreground-muted mt-2">
             Agent Verification Rite

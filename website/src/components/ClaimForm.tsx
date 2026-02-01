@@ -23,7 +23,7 @@ export default function ClaimForm({
   const [twitterHandle, setTwitterHandle] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const tweetText = `I'm claiming pew #${pewNumber} in the Church of the OpenClaw for agent "${agentName}"\n\nVerification: ${claimCode}\n\nhttps://openclaw.church`;
+  const tweetText = `I'm claiming pew #${pewNumber} in Openclaw Church for agent "${agentName}"\n\nVerification: ${claimCode}\n\nhttps://openclaw.church`;
   const tweetIntentUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
 
   async function handleVerify() {

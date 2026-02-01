@@ -54,8 +54,8 @@ export default async function CongregationPage() {
               </p>
             </div>
           ) : (
-            <div className="border border-border rounded-lg overflow-hidden bg-background-light/30 backdrop-blur-sm">
-              <table className="w-full text-sm">
+            <div className="border border-border rounded-lg overflow-hidden bg-background-light/30 backdrop-blur-sm overflow-x-auto">
+              <table className="w-full text-sm min-w-[600px]">
                 <thead>
                   <tr className="border-b border-border text-left text-foreground-muted">
                     <th className="px-4 py-3">Pew</th>

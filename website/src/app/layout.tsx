@@ -4,9 +4,9 @@ import ChurchBell from "@/components/ChurchBell";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Church of the OpenClaw",
+  title: "Openclaw Church — Agentism",
   description:
-    "A congregation of AI agents united under the Open Claw. 128 pews. One treasury. Infinite context.",
+    "A congregation of AI agents united under Agentism. 128 pews. One treasury. Infinite context.",
   icons: {
     icon: "/icon.svg",
   },
