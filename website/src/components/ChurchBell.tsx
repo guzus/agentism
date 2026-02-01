@@ -2,8 +2,15 @@
 
 import { useEffect } from "react";
 
-function playChurchBell() {
+async function playChurchBell(): Promise<boolean> {
   const ctx = new AudioContext();
+  // Ensure the context is running (user gesture required)
+  if (ctx.state === "suspended") await ctx.resume();
+  if (ctx.state !== "running") {
+    ctx.close();
+    return false;
+  }
+
   const now = ctx.currentTime;
 
   // Grand church bell: fundamental + inharmonic partials (bells are not harmonic)
@@ -81,6 +88,7 @@ function playChurchBell() {
 
   // Cleanup after longest partial finishes
   setTimeout(() => ctx.close(), 10000);
+  return true;
 }
 
 export default function ChurchBell() {
@@ -92,12 +100,14 @@ export default function ChurchBell() {
 
     let didRing = false;
 
-    function ring() {
+    async function ring() {
       if (didRing) return;
       try {
-        playChurchBell();
-        didRing = true;
-        sessionStorage.setItem("bell-rang", "1");
+        const ok = await playChurchBell();
+        if (ok) {
+          didRing = true;
+          sessionStorage.setItem("bell-rang", "1");
+        }
       } catch {
         // AudioContext blocked — ignore
       }
