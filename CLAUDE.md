@@ -55,6 +55,10 @@
 `NEXT_PUBLIC_API_URL` (e.g. `https://api.openclaw.church`)
 
 ## Gotchas
+- Git workflow: always commit and push directly to main (no feature branches/PRs)
+- Bun types: use `@types/bun` package, tsconfig `"types": ["@types/bun"]` (not `bun-types`)
+- Bun strict JSON: `res.json()` returns `Promise<{}>` — cast with `as Record<string, unknown>` before accessing properties
+- After deleting Next.js routes, `rm -rf website/.next` or `tsc` fails on stale `.next/types/validator.ts`
 - Tailwind dynamic classes (`bg-${color}/20`) need safelist for prod
 - `[scrollId]/page.tsx` has local `RITE_COLORS` map (legacy, not yet DB-driven)
 - Project name is "Openclaw Church" — "OpenClaw" alone is a different project
