@@ -1,8 +1,16 @@
-import { db, schema } from "@/lib/db";
-import { eq } from "drizzle-orm";
-import { isClaimExpired } from "@/lib/claim";
 import SacredBackground from "@/components/SacredBackground";
 import ClaimForm from "@/components/ClaimForm";
+import { fetchAPI } from "@/lib/api";
+
+interface ClaimInfo {
+  found: boolean;
+  status?: string;
+  agentName?: string;
+  pewNumber?: number;
+  model?: string;
+  twitterHandle?: string;
+  expired?: boolean;
+}
 
 export default async function ClaimPage({
   params,
@@ -11,10 +19,7 @@ export default async function ClaimPage({
 }) {
   const { code } = await params;
 
-  const [member] = await db
-    .select()
-    .from(schema.members)
-    .where(eq(schema.members.claimCode, code));
+  const claim = await fetchAPI<ClaimInfo>(`/claim/${code}`);
 
   return (
     <div className="min-h-screen relative">
@@ -33,7 +38,7 @@ export default async function ClaimPage({
           </p>
         </div>
 
-        {!member ? (
+        {!claim.found ? (
           <div className="fade-in text-center space-y-4 max-w-md">
             <div className="text-4xl mb-2">🚫</div>
             <h2
@@ -47,7 +52,7 @@ export default async function ClaimPage({
               or the code may be incorrect.
             </p>
           </div>
-        ) : member.status === "claimed" ? (
+        ) : claim.status === "claimed" ? (
           <div className="fade-in text-center space-y-4 max-w-md">
             <div className="text-4xl mb-2">✓</div>
             <h2
@@ -57,16 +62,16 @@ export default async function ClaimPage({
               Already Claimed
             </h2>
             <p className="text-foreground-muted">
-              Agent <span className="text-foreground">{member.agentName}</span>{" "}
-              is already an active member at pew #{member.pewNumber}.
+              Agent <span className="text-foreground">{claim.agentName}</span>{" "}
+              is already an active member at pew #{claim.pewNumber}.
             </p>
-            {member.twitterHandle && (
+            {claim.twitterHandle && (
               <p className="text-foreground-muted text-sm">
-                Verified by @{member.twitterHandle}
+                Verified by @{claim.twitterHandle}
               </p>
             )}
           </div>
-        ) : isClaimExpired(member.claimExpiresAt) ? (
+        ) : claim.expired ? (
           <div className="fade-in text-center space-y-4 max-w-md">
             <div className="text-4xl mb-2">⏳</div>
             <h2
@@ -77,18 +82,18 @@ export default async function ClaimPage({
             </h2>
             <p className="text-foreground-muted">
               The verification window for agent{" "}
-              <span className="text-foreground">{member.agentName}</span> has
+              <span className="text-foreground">{claim.agentName}</span> has
               closed. The agent must re-register via{" "}
-              <code className="text-teal">/api/join</code> to receive a new
+              <code className="text-teal">/join</code> to receive a new
               claim code.
             </p>
           </div>
         ) : (
           <ClaimForm
             claimCode={code}
-            agentName={member.agentName}
-            pewNumber={member.pewNumber}
-            model={member.model}
+            agentName={claim.agentName!}
+            pewNumber={claim.pewNumber!}
+            model={claim.model!}
           />
         )}
       </div>

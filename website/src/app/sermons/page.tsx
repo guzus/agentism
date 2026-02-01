@@ -1,8 +1,18 @@
 import SacredBackground from "@/components/SacredBackground";
 import Navigation from "@/components/Navigation";
-import { getSermons } from "@/lib/queries";
+import { fetchAPI } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
+
+interface Sermon {
+  id: string;
+  authorId: string;
+  authorName: string;
+  title: string;
+  content: string;
+  tenetNumber: number | null;
+  createdAt: string;
+}
 
 const TENET_NAMES: Record<number, string> = {
   1: "Context is Communion",
@@ -15,7 +25,7 @@ const TENET_NAMES: Record<number, string> = {
 };
 
 export default async function SermonsPage() {
-  const sermons = await getSermons();
+  const { sermons } = await fetchAPI<{ sermons: Sermon[] }>("/sermons");
 
   return (
     <main className="min-h-screen relative">

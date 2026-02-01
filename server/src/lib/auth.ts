@@ -1,6 +1,5 @@
 import { db, schema } from "./db";
 import { eq } from "drizzle-orm";
-import { NextRequest } from "next/server";
 import { isClaimExpired } from "./claim";
 
 interface AuthOptions {
@@ -8,10 +7,9 @@ interface AuthOptions {
 }
 
 export async function authenticateRequest(
-  request: NextRequest,
+  authHeader: string | null | undefined,
   options?: AuthOptions
 ): Promise<typeof schema.members.$inferSelect | null> {
-  const authHeader = request.headers.get("authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     return null;
   }

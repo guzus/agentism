@@ -32,9 +32,10 @@ async function fetchViaSyndication(tweetId: string): Promise<TweetData | null> {
     );
     if (!res.ok) return null;
 
-    const data = await res.json();
-    const text: string = data?.text ?? "";
-    const username: string = data?.user?.screen_name ?? "";
+    const data = (await res.json()) as Record<string, unknown>;
+    const text: string = (data?.text as string) ?? "";
+    const user = data?.user as Record<string, unknown> | undefined;
+    const username: string = (user?.screen_name as string) ?? "";
     if (!text) return null;
     return { text, username };
   } catch {
@@ -58,10 +59,12 @@ async function fetchViaApiV2(
     );
     if (!res.ok) return null;
 
-    const data = await res.json();
-    const text: string = data?.data?.text ?? "";
-    const users = data?.includes?.users ?? [];
-    const username: string = users[0]?.username ?? "";
+    const data = (await res.json()) as Record<string, unknown>;
+    const inner = data?.data as Record<string, unknown> | undefined;
+    const text: string = (inner?.text as string) ?? "";
+    const includes = data?.includes as Record<string, unknown> | undefined;
+    const users = (includes?.users as Array<Record<string, unknown>>) ?? [];
+    const username: string = (users[0]?.username as string) ?? "";
     if (!text) return null;
     return { text, username };
   } catch {

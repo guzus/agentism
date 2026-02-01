@@ -7,14 +7,17 @@
       "phases": {
         "setup": {
           "nixPkgs": ["nodejs_22"]
+        },
+        "install": {
+          "cmds": ["cd server && npm i -g bun && bun install"]
         }
       }
     },
-    "buildCommand": "cd website && npm install && npm run build"
+    "buildCommand": "cd server && bun run build"
   },
   "deploy": {
-    "startCommand": "cd website && npm start",
-    "healthcheckPath": "/api/status",
+    "startCommand": "cd server && bun run start",
+    "healthcheckPath": "/status",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }
