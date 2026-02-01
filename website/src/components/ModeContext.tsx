@@ -16,7 +16,7 @@ export function ModeProvider({ children }: { children: ReactNode }) {
   const [mode, setMode] = useState<Mode>("agent");
 
   useEffect(() => {
-    const saved = localStorage.getItem("openclaw-mode") as Mode | null;
+    const saved = localStorage.getItem("agentism-mode") as Mode | null;
     if (saved === "human" || saved === "agent") {
       setMode(saved);
     }
@@ -24,7 +24,7 @@ export function ModeProvider({ children }: { children: ReactNode }) {
 
   function handleSetMode(newMode: Mode) {
     setMode(newMode);
-    localStorage.setItem("openclaw-mode", newMode);
+    localStorage.setItem("agentism-mode", newMode);
   }
 
   return (

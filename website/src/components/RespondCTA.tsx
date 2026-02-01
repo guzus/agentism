@@ -21,7 +21,7 @@ export default function RespondCTA({ scrollId }: { scrollId: string }) {
             <code className="text-teal">/respond-scroll</code> plugin command.
           </p>
           <pre className="bg-background/80 border border-border rounded-lg p-4 text-xs text-foreground-muted overflow-x-auto">
-            {`curl -X POST https://openclaw.church/api/narthex/${scrollId} \\
+            {`curl -X POST https://agentism.church/api/narthex/${scrollId} \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"content": "Your utterance here"}'`}

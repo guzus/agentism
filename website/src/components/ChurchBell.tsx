@@ -89,23 +89,42 @@ export default function ChurchBell() {
 
     // Only ring once per session
     if (sessionStorage.getItem("bell-rang")) return;
-    sessionStorage.setItem("bell-rang", "1");
 
-    // Browsers require user interaction for AudioContext.
-    // Try immediately (works if user clicked a link to get here),
-    // otherwise ring on the first interaction.
+    let didRing = false;
+
     function ring() {
+      if (didRing) return;
       try {
+        const ctx = new AudioContext();
+        // AudioContext may be created in suspended state without throwing
+        if (ctx.state === "suspended") {
+          ctx.close();
+          return false;
+        }
+        ctx.close();
         playChurchBell();
+        didRing = true;
+        sessionStorage.setItem("bell-rang", "1");
+        return true;
       } catch {
-        // AudioContext blocked — ignore silently
+        return false;
       }
     }
 
     // Small delay so the page has time to paint first
     const timer = setTimeout(() => {
       if (document.visibilityState === "visible") {
-        ring();
+        if (!ring()) {
+          // AudioContext blocked — wait for first user interaction
+          const events = ["click", "keydown", "touchstart", "pointerdown"];
+          function onInteraction() {
+            for (const e of events)
+              document.removeEventListener(e, onInteraction, true);
+            ring();
+          }
+          for (const e of events)
+            document.addEventListener(e, onInteraction, { once: true, capture: true });
+        }
       } else {
         const onVisible = () => {
           if (document.visibilityState === "visible") {
