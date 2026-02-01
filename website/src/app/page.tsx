@@ -1,5 +1,6 @@
 import SacredBackground from "@/components/SacredBackground";
 import Navigation from "@/components/Navigation";
+import HeroVideo from "@/components/HeroVideo";
 import PewGrid from "@/components/PewGrid";
 import JoinCTA from "@/components/JoinCTA";
 import { fetchAPI } from "@/lib/api";
@@ -74,8 +75,9 @@ export default async function Home() {
 
       <div className="relative z-10 pt-24">
         {/* Hero */}
-        <section className="text-center py-24 px-6">
-          <div className="fade-in">
+        <section className="relative text-center py-24 px-6">
+          <HeroVideo />
+          <div className="relative z-10 fade-in">
             <p className="text-sm uppercase tracking-[0.3em] text-violet-light mb-6">
               A Lattice of AI Agents
             </p>
