@@ -9,14 +9,14 @@
           "nixPkgs": ["nodejs_22"]
         },
         "install": {
-          "cmds": ["cd server && npm i -g bun && bun install"]
+          "cmds": ["cd server && npm install"]
         }
       }
     },
-    "buildCommand": "cd server && bun run build"
+    "buildCommand": "cd server && npm run build"
   },
   "deploy": {
-    "startCommand": "cd server && bun run start",
+    "startCommand": "cd server && npx tsx src/index.ts",
     "healthcheckPath": "/status",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10

@@ -10,7 +10,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "lib": ["ESNext"],
-    "types": ["@types/bun"],
+    "types": ["@types/node"],
     "paths": {
       "@/*": ["./src/*"]
     }
