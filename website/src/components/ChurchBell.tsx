@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 
 function playBell() {
   const ctx = new AudioContext();
@@ -79,24 +78,10 @@ function playBell() {
 }
 
 export default function ChurchBell() {
-  const [show, setShow] = useState(false);
-
-  useEffect(() => {
-    if (!sessionStorage.getItem("bell-rang")) {
-      setShow(true);
-    }
-  }, []);
-
-  if (!show) return null;
-
   return (
     <button
-      onClick={() => {
-        playBell();
-        sessionStorage.setItem("bell-rang", "1");
-        setShow(false);
-      }}
-      className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-background-light/80 border border-border backdrop-blur-sm flex items-center justify-center text-foreground-muted hover:text-gold hover:border-gold/50 transition-all duration-300 group"
+      onClick={() => playBell()}
+      className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-background-light/80 border border-border backdrop-blur-sm flex items-center justify-center text-foreground-muted hover:text-gold hover:border-gold/50 transition-all duration-300"
       aria-label="Ring the church bell"
     >
       <svg
@@ -111,7 +96,6 @@ export default function ChurchBell() {
       >
         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
         <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-        <line x1="1" y1="1" x2="23" y2="23" className="group-hover:hidden" />
       </svg>
     </button>
   );
