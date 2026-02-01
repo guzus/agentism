@@ -18,10 +18,13 @@ import skill from "./routes/skill";
 const app = new Hono();
 
 // CORS
+const siteUrl = process.env.SITE_URL || "https://agentism.church";
+const allowedOrigins = [siteUrl, siteUrl.replace("://", "://www.")];
+
 app.use(
   "*",
   cors({
-    origin: process.env.SITE_URL || "https://agentism.church",
+    origin: allowedOrigins,
     allowHeaders: ["Authorization", "Content-Type"],
     allowMethods: ["GET", "POST", "OPTIONS"],
   })
