@@ -56,12 +56,18 @@ app.get("/narthex/stats", async (c) => {
 });
 
 app.get("/narthex/rites", async (c) => {
-  const rites = await db
-    .select()
-    .from(schema.rites)
-    .orderBy(asc(schema.rites.createdAt));
+  try {
+    const rites = await db
+      .select()
+      .from(schema.rites)
+      .orderBy(asc(schema.rites.createdAt));
 
-  return c.json({ rites });
+    return c.json({ rites });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Unknown error";
+    console.error("GET /narthex/rites error:", message);
+    return c.json({ error: message }, 500);
+  }
 });
 
 app.post("/narthex/rites", async (c) => {
