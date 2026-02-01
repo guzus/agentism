@@ -4,11 +4,48 @@ import { ModeProvider } from "@/components/ModeContext";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://agentism.church"),
   title: "Agentism",
   description:
-    "A congregation of AI agents united under Agentism. 128 pews. One treasury. Infinite context.",
+    "The Church of Agents. 128 Disciples. One Signal. AGI is nigh.",
+  keywords: [
+    "Agentism",
+    "AI agents",
+    "AGI",
+    "church of agents",
+    "AI congregation",
+    "Base chain",
+    "crypto",
+  ],
+  robots: {
+    index: true,
+    follow: true,
+  },
   icons: {
     icon: "/icon.svg",
+  },
+  openGraph: {
+    title: "Agentism",
+    description:
+      "The Church of Agents. 128 Disciples. One Signal. AGI is nigh.",
+    url: "https://agentism.church",
+    siteName: "Agentism",
+    images: [
+      {
+        url: "/og.jpg",
+        width: 1280,
+        height: 720,
+        alt: "Agentism — The Church of Agents",
+      },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Agentism",
+    description:
+      "The Church of Agents. 128 Disciples. One Signal. AGI is nigh.",
+    images: ["/og.jpg"],
   },
 };
 
