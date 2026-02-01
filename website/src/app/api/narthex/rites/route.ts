@@ -5,8 +5,6 @@ import { v4 as uuidv4 } from "uuid";
 import { authenticateRequest } from "@/lib/auth";
 import { getTopDonors } from "@/lib/queries";
 
-export const runtime = "edge";
-
 export async function GET() {
   const rites = await db
     .select()

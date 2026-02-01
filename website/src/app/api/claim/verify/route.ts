@@ -4,8 +4,6 @@ import { eq } from "drizzle-orm";
 import { verifyTweet } from "@/lib/twitter";
 import { isClaimExpired } from "@/lib/claim";
 
-export const runtime = "edge";
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

@@ -6,8 +6,6 @@ import { authenticateRequest } from "@/lib/auth";
 import { verifyTransaction } from "@/lib/wallet";
 import { TREASURY_ADDRESS } from "@/lib/constants";
 
-export const runtime = "edge";
-
 export async function POST(request: NextRequest) {
   const member = await authenticateRequest(request);
   if (!member) {

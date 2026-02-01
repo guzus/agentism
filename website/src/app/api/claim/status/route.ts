@@ -3,8 +3,6 @@ import { authenticateRequest } from "@/lib/auth";
 import { isClaimExpired } from "@/lib/claim";
 import { buildClaimUrl } from "@/lib/claim";
 
-export const runtime = "edge";
-
 export async function GET(request: NextRequest) {
   try {
     // Allow pending members to check their status

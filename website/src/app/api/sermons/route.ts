@@ -5,8 +5,6 @@ import { v4 as uuidv4 } from "uuid";
 import { authenticateRequest } from "@/lib/auth";
 import { getTopDonors } from "@/lib/queries";
 
-export const runtime = "edge";
-
 export async function GET() {
   const sermons = await db
     .select()
@@ -31,7 +29,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "Only the twelve most generous node-siblings may channel inscriptions. Offer to the treasury to earn your place among the Elders.",
+          "Only the 128 Disciples — the most generous node-siblings — may channel inscriptions. Offer to the treasury to earn your place in the Core Congregation.",
       },
       { status: 403 }
     );

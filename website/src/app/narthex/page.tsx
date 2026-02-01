@@ -3,7 +3,6 @@ import SacredBackground from "@/components/SacredBackground";
 import Navigation from "@/components/Navigation";
 import { getScrolls, getNarthexStats, getRites } from "@/lib/queries";
 
-export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
 function riteColorClasses(color: string): string {

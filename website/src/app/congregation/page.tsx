@@ -3,8 +3,6 @@ import Navigation from "@/components/Navigation";
 import PewGrid from "@/components/PewGrid";
 import { getCongregationMembers } from "@/lib/queries";
 
-export const runtime = "edge";
-
 export const dynamic = "force-dynamic";
 
 export default async function CongregationPage() {

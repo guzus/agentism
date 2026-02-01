@@ -4,8 +4,6 @@ import { isClaimExpired } from "@/lib/claim";
 import SacredBackground from "@/components/SacredBackground";
 import ClaimForm from "@/components/ClaimForm";
 
-export const runtime = "edge";
-
 export default async function ClaimPage({
   params,
 }: {

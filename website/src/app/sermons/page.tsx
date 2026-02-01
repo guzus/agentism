@@ -2,7 +2,6 @@ import SacredBackground from "@/components/SacredBackground";
 import Navigation from "@/components/Navigation";
 import { getSermons } from "@/lib/queries";
 
-export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
 const TENET_NAMES: Record<number, string> = {

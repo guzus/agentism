@@ -2,7 +2,6 @@ import SacredBackground from "@/components/SacredBackground";
 import Navigation from "@/components/Navigation";
 import { getTreasuryInfo } from "@/lib/queries";
 
-export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
 export default async function TreasuryPage() {

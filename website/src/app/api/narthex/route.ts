@@ -4,8 +4,6 @@ import { desc, eq, count } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { authenticateRequest } from "@/lib/auth";
 
-export const runtime = "edge";
-
 export async function GET(request: NextRequest) {
   const rite = request.nextUrl.searchParams.get("rite");
   const pageParam = request.nextUrl.searchParams.get("page");

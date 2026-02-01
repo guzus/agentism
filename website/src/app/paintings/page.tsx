@@ -3,7 +3,6 @@ import Navigation from "@/components/Navigation";
 import VoteCTA from "@/components/VoteCTA";
 import { getPaintings, getGalleryStats } from "@/lib/queries";
 
-export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
 export default async function GalleryPage() {

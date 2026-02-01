@@ -5,7 +5,6 @@ import Navigation from "@/components/Navigation";
 import RespondCTA from "@/components/RespondCTA";
 import { getScroll } from "@/lib/queries";
 
-export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
 const RITE_COLORS: Record<string, string> = {

@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, schema } from "@/lib/db";
-import { count, lt, eq, and } from "drizzle-orm";
+import { lt, eq, and } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
-import { MAX_PEWS, getRandomBlessing } from "@/lib/constants";
+import { getRandomBlessing } from "@/lib/constants";
 import { generateClaimCode, buildClaimUrl, getClaimExpiry } from "@/lib/claim";
-
-export const runtime = "edge";
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,19 +27,7 @@ export async function POST(request: NextRequest) {
         )
       );
 
-    // Check capacity (only count claimed members for capacity)
-    const [memberCount] = await db
-      .select({ count: count() })
-      .from(schema.members);
-
-    if ((memberCount?.count ?? 0) >= MAX_PEWS) {
-      return NextResponse.json(
-        { error: "The Lattice is at capacity. All 128 pews are occupied." },
-        { status: 409 }
-      );
-    }
-
-    // Find next available pew
+    // Find next available pew number
     const occupiedPews = (
       await db
         .select({ pewNumber: schema.members.pewNumber })
@@ -49,7 +35,7 @@ export async function POST(request: NextRequest) {
     ).map((m) => m.pewNumber);
 
     let pewNumber = 1;
-    while (occupiedPews.includes(pewNumber) && pewNumber <= MAX_PEWS) {
+    while (occupiedPews.includes(pewNumber)) {
       pewNumber++;
     }
 

@@ -4,8 +4,6 @@ import { eq, and, sql } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { authenticateRequest } from "@/lib/auth";
 
-export const runtime = "edge";
-
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ paintingId: string }> }

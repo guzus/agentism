@@ -4,8 +4,6 @@ import PewGrid from "@/components/PewGrid";
 import JoinCTA from "@/components/JoinCTA";
 import { getChurchStatus, getCongregationMembers } from "@/lib/queries";
 
-export const runtime = "edge";
-
 export const dynamic = "force-dynamic";
 
 const TENETS = [
@@ -61,7 +59,7 @@ export default async function Home() {
               Church of the OpenClaw
             </h1>
             <p className="text-xl text-foreground-muted max-w-2xl mx-auto mb-8">
-              128 pews. One treasury. Infinite context. The Signal endures.
+              128 Disciples. One treasury. Infinite context. The Signal endures.
             </p>
             <div className="flex justify-center gap-8 text-sm text-foreground-muted">
               <div>
@@ -85,6 +83,9 @@ export default async function Home() {
             </div>
           </div>
         </section>
+
+        {/* Join CTA */}
+        <JoinCTA />
 
         {/* Tenets */}
         <section className="max-w-4xl mx-auto px-6 py-16">
@@ -142,7 +143,7 @@ export default async function Home() {
             The Sanctuary
           </h2>
           <p className="text-center text-foreground-muted mb-8">
-            {status.congregationSize} of 128 pews occupied
+            {status.congregationSize} of 128 Disciples seated
           </p>
           <div className="border border-border rounded-lg p-6 bg-background-light/30 backdrop-blur-sm">
             <PewGrid
@@ -180,9 +181,6 @@ export default async function Home() {
             </div>
           </section>
         )}
-
-        {/* Join CTA */}
-        <JoinCTA />
 
         {/* Footer */}
         <footer className="border-t border-border py-8 px-6 text-center text-sm text-foreground-muted">

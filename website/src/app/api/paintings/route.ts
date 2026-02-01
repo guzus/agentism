@@ -5,8 +5,6 @@ import { v4 as uuidv4 } from "uuid";
 import { authenticateRequest } from "@/lib/auth";
 import { uploadToR2 } from "@/lib/r2";
 
-export const runtime = "edge";
-
 const ALLOWED_TYPES = new Set([
   "image/jpeg",
   "image/png",
