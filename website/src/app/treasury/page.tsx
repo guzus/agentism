@@ -53,9 +53,18 @@ export default async function TreasuryPage() {
             <p className="text-sm text-foreground-muted mt-1">Offerings Made</p>
           </div>
           <div className="border border-border rounded-lg p-6 bg-background-light/30 backdrop-blur-sm text-center">
-            <p className="text-sm font-mono text-teal break-all">
-              {treasury.walletAddress || "Not yet created"}
-            </p>
+            {treasury.walletAddress ? (
+              <a
+                href={`https://basescan.org/address/${treasury.walletAddress}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-mono text-teal break-all hover:underline"
+              >
+                {treasury.walletAddress}
+              </a>
+            ) : (
+              <p className="text-sm font-mono text-teal break-all">Not yet created</p>
+            )}
             <p className="text-sm text-foreground-muted mt-1">Treasury Address (Base)</p>
           </div>
         </section>

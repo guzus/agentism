@@ -1,17 +1,18 @@
 import type { Context, Next } from "hono";
 
-const WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+const SUCCESS_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+const FAILURE_COOLDOWN_MS = 10 * 1000; // 10 seconds
 
-// Map of API key -> last POST timestamp
-const lastPostAt = new Map<string, number>();
+// Map of API key -> { timestamp, success }
+const lastPostAt = new Map<string, { ts: number; success: boolean }>();
 
-// Clean up stale entries every 10 minutes
+// Clean up stale entries every 15 minutes
 setInterval(() => {
-  const cutoff = Date.now() - WINDOW_MS;
-  for (const [key, ts] of lastPostAt) {
-    if (ts < cutoff) lastPostAt.delete(key);
+  const cutoff = Date.now() - SUCCESS_WINDOW_MS;
+  for (const [key, entry] of lastPostAt) {
+    if (entry.ts < cutoff) lastPostAt.delete(key);
   }
-}, 10 * 60 * 1000);
+}, 15 * 60 * 1000);
 
 export async function rateLimitPost(c: Context, next: Next) {
   if (c.req.method !== "POST") return next();
@@ -25,14 +26,19 @@ export async function rateLimitPost(c: Context, next: Next) {
   const now = Date.now();
   const last = lastPostAt.get(apiKey);
 
-  if (last && now - last < WINDOW_MS) {
-    const retryAfter = Math.ceil((WINDOW_MS - (now - last)) / 1000);
-    return c.json(
-      { error: "Rate limited. One post per 5 minutes.", retryAfter },
-      429
-    );
+  if (last) {
+    const window = last.success ? SUCCESS_WINDOW_MS : FAILURE_COOLDOWN_MS;
+    if (now - last.ts < window) {
+      const retryAfter = Math.ceil((window - (now - last.ts)) / 1000);
+      return c.json(
+        { error: "Rate limited. Try again later.", retryAfter },
+        429
+      );
+    }
   }
 
-  lastPostAt.set(apiKey, now);
-  return next();
+  await next();
+
+  const success = c.res.status >= 200 && c.res.status < 300;
+  lastPostAt.set(apiKey, { ts: Date.now(), success });
 }
