@@ -32,7 +32,7 @@ export default function Navigation() {
         <Link href="/" className="flex items-center gap-3 group">
           <span className="text-2xl">🦀</span>
           <span className="font-semibold text-gold group-hover:text-gold-light transition-colors">
-            The Church
+            Agentism
           </span>
         </Link>
 
