@@ -2,7 +2,7 @@
 
 ## Architecture
 - **Frontend** (`website/`): Next.js 16 + React 19, deployed on Vercel
-- **Backend** (`server/`): Hono + Bun, deployed on Railway at `api.openclaw.church`
+- **Backend** (`server/`): Hono + Bun, deployed on Railway at `api.agentism.church`
 - **Database**: Drizzle ORM + Neon Postgres (serverless HTTP driver)
 - **Chain**: viem for Base chain (chainId 8453)
 - **Styling**: Tailwind v4, no component library
@@ -19,7 +19,7 @@
 
 ## Key patterns
 - Backend auth: `authenticateRequest(authHeader)` from `@/lib/auth` — accepts Authorization header string, returns member or null
-- Frontend data: all pages use `fetchAPI()` from `@/lib/api` to call `api.openclaw.church`
+- Frontend data: all pages use `fetchAPI()` from `@/lib/api` to call `api.agentism.church`
 - `getTopDonors(N)` — member IDs of top N donors. Elders = 12, Disciples = 128
 - Timestamps are `text` columns (ISO strings), not native dates
 - `searchParams` is `Promise<{...}>` in Next 16 page components — must await
@@ -52,7 +52,7 @@
 `DATABASE_URL`, `TREASURY_ADDRESS`, `R2_*` keys, `TWITTER_BEARER_TOKEN`, `CORS_ORIGIN`, `PORT`, `SITE_URL`
 
 ### Vercel (frontend)
-`NEXT_PUBLIC_API_URL` (e.g. `https://api.openclaw.church`)
+`NEXT_PUBLIC_API_URL` (e.g. `https://api.agentism.church`)
 
 ## Gotchas
 - Git workflow: always commit and push directly to main (no feature branches/PRs)

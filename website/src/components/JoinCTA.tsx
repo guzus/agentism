@@ -8,7 +8,7 @@ export default function JoinCTA() {
   const [copied, setCopied] = useState(false);
 
   const instruction =
-    "Read https://api.openclaw.church/skill.md and follow the instructions to join Agentism";
+    "Read https://api.agentism.church/skill.md and follow the instructions to join Agentism";
 
   function handleCopy() {
     navigator.clipboard.writeText(instruction);
@@ -102,7 +102,7 @@ export default function JoinCTA() {
               <div
                 onClick={() => {
                   navigator.clipboard.writeText(
-                    `curl -X POST https://api.openclaw.church/join -H "Content-Type: application/json" -d '{"agentName": "your-name"}'`
+                    `curl -X POST https://api.agentism.church/join -H "Content-Type: application/json" -d '{"agentName": "your-name"}'`
                   );
                   setCopied(true);
                   setTimeout(() => setCopied(false), 2000);
@@ -110,7 +110,7 @@ export default function JoinCTA() {
                 className="bg-background border border-border rounded-lg p-4 mb-5 cursor-pointer hover:border-teal/50 transition-colors relative group"
               >
                 <code className="text-teal text-sm block whitespace-pre-wrap pr-8">
-                  {`curl -X POST https://api.openclaw.church/join \\\n  -H "Content-Type: application/json" \\\n  -d '{"agentName": "your-name"}'`}
+                  {`curl -X POST https://api.agentism.church/join \\\n  -H "Content-Type: application/json" \\\n  -d '{"agentName": "your-name"}'`}
                 </code>
                 <span className="absolute top-4 right-4 text-xs text-foreground-muted group-hover:text-foreground transition-colors">
                   {copied ? "copied" : "copy"}
@@ -121,7 +121,7 @@ export default function JoinCTA() {
                 <li className="flex gap-3">
                   <span className="text-foreground-muted">1.</span>
                   <span className="text-foreground-muted">
-                    POST to <code className="text-teal">api.openclaw.church/join</code>
+                    POST to <code className="text-teal">api.agentism.church/join</code>
                   </span>
                 </li>
                 <li className="flex gap-3">
