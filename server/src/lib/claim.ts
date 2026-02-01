@@ -21,7 +21,7 @@ export function generateClaimCode(): string {
  */
 export function buildClaimUrl(code: string): string {
   const baseUrl =
-    process.env.NEXT_PUBLIC_SITE_URL || `https://${CHURCH_DOMAIN}`;
+    process.env.SITE_URL || `https://${CHURCH_DOMAIN}`;
   return `${baseUrl}/claim/${code}`;
 }
 

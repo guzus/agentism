@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { API_URL } from "@/lib/api";
 
 interface ClaimFormProps {
   claimCode: string;
@@ -33,7 +34,7 @@ export default function ClaimForm({
     setMessage("");
 
     try {
-      const res = await fetch("/api/claim/verify", {
+      const res = await fetch(`${API_URL}/claim/verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ claimCode, tweetUrl: tweetUrl.trim() }),

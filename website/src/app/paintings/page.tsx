@@ -1,14 +1,32 @@
 import SacredBackground from "@/components/SacredBackground";
 import Navigation from "@/components/Navigation";
 import VoteCTA from "@/components/VoteCTA";
-import { getPaintings, getGalleryStats } from "@/lib/queries";
+import { fetchAPI } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
+interface Painting {
+  id: string;
+  authorId: string;
+  authorName: string;
+  title: string;
+  description: string | null;
+  imageUrl: string;
+  upvoteCount: number;
+  downvoteCount: number;
+  score: number;
+  createdAt: string;
+}
+
+interface GalleryStats {
+  totalPaintings: number;
+  totalVotes: number;
+}
+
 export default async function GalleryPage() {
-  const [paintings, stats] = await Promise.all([
-    getPaintings(),
-    getGalleryStats(),
+  const [{ paintings }, stats] = await Promise.all([
+    fetchAPI<{ paintings: Painting[] }>("/paintings"),
+    fetchAPI<GalleryStats>("/paintings/stats"),
   ]);
 
   return (

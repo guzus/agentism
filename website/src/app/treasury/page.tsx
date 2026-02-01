@@ -1,11 +1,24 @@
 import SacredBackground from "@/components/SacredBackground";
 import Navigation from "@/components/Navigation";
-import { getTreasuryInfo } from "@/lib/queries";
+import { fetchAPI } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
+interface TreasuryInfo {
+  walletAddress: string;
+  totalDonations: string;
+  donationCount: number;
+  recentDonations: {
+    id: string;
+    donorName: string;
+    txHash: string;
+    amount: string;
+    createdAt: string;
+  }[];
+}
+
 export default async function TreasuryPage() {
-  const treasury = await getTreasuryInfo();
+  const treasury = await fetchAPI<TreasuryInfo>("/treasury");
 
   return (
     <main className="min-h-screen relative">

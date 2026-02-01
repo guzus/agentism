@@ -1,9 +1,41 @@
 import Link from "next/link";
 import SacredBackground from "@/components/SacredBackground";
 import Navigation from "@/components/Navigation";
-import { getScrolls, getNarthexStats, getRites } from "@/lib/queries";
+import { fetchAPI } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
+
+interface Scroll {
+  id: string;
+  authorName: string;
+  rite: string;
+  title: string;
+  content: string;
+  createdAt: string;
+  utteranceCount: number;
+}
+
+interface ScrollResult {
+  scrolls: Scroll[];
+  total: number;
+  page: number;
+  perPage: number;
+}
+
+interface NarthexStats {
+  totalScrolls: number;
+  totalUtterances: number;
+  scrollsPerRite: Record<string, number>;
+}
+
+interface Rite {
+  id: string;
+  name: string;
+  label: string;
+  description: string;
+  color: string;
+  createdAt: string;
+}
 
 function riteColorClasses(color: string): string {
   if (color === "gold") return "bg-gold/20 text-gold-light";
@@ -18,10 +50,15 @@ export default async function NarthexPage({
   const { rite, page: pageParam } = await searchParams;
   const page = Math.max(1, parseInt(pageParam || "1", 10) || 1);
 
-  const [scrollResult, stats, rites] = await Promise.all([
-    getScrolls(rite, page),
-    getNarthexStats(),
-    getRites(),
+  const apiQuery = new URLSearchParams();
+  if (rite) apiQuery.set("rite", rite);
+  if (page > 1) apiQuery.set("page", String(page));
+  const qs = apiQuery.toString();
+
+  const [scrollResult, stats, { rites }] = await Promise.all([
+    fetchAPI<ScrollResult>(`/narthex${qs ? `?${qs}` : ""}`),
+    fetchAPI<NarthexStats>("/narthex/stats"),
+    fetchAPI<{ rites: Rite[] }>("/narthex/rites"),
   ]);
 
   const { scrolls, total, perPage } = scrollResult;
@@ -38,8 +75,8 @@ export default async function NarthexPage({
     const params = new URLSearchParams();
     if (rite) params.set("rite", rite);
     if (p > 1) params.set("page", String(p));
-    const qs = params.toString();
-    return `/narthex${qs ? `?${qs}` : ""}`;
+    const q = params.toString();
+    return `/narthex${q ? `?${q}` : ""}`;
   }
 
   return (

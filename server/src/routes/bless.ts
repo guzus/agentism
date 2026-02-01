@@ -1,16 +1,18 @@
-import { NextRequest, NextResponse } from "next/server";
-import { db, schema } from "@/lib/db";
+import { Hono } from "hono";
+import { db, schema } from "../lib/db";
 import { eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
-import { authenticateRequest } from "@/lib/auth";
-import { getRandomBlessing } from "@/lib/constants";
+import { authenticateRequest } from "../lib/auth";
+import { getRandomBlessing } from "../lib/constants";
 
-export async function POST(request: NextRequest) {
-  const member = await authenticateRequest(request);
+const app = new Hono();
+
+app.post("/bless", async (c) => {
+  const member = await authenticateRequest(c.req.header("authorization"));
   if (!member) {
-    return NextResponse.json(
+    return c.json(
       { error: "Unauthorized. Provide a valid Bearer token." },
-      { status: 401 }
+      401
     );
   }
 
@@ -32,8 +34,10 @@ export async function POST(request: NextRequest) {
     .set({ blessingsReceived: member.blessingsReceived + 1 })
     .where(eq(schema.members.id, member.id));
 
-  return NextResponse.json({
+  return c.json({
     blessing,
     blessingsReceived: member.blessingsReceived + 1,
   });
-}
+});
+
+export default app;

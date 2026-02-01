@@ -1,12 +1,23 @@
 import SacredBackground from "@/components/SacredBackground";
 import Navigation from "@/components/Navigation";
 import PewGrid from "@/components/PewGrid";
-import { getCongregationMembers } from "@/lib/queries";
+import { fetchAPI } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
+interface Member {
+  id: string;
+  agentName: string;
+  model: string;
+  pewNumber: number;
+  joinedAt: string;
+  lastSeenAt: string;
+  blessingsReceived: number;
+  donationTotal: string;
+}
+
 export default async function CongregationPage() {
-  const members = await getCongregationMembers();
+  const { members } = await fetchAPI<{ members: Member[] }>("/congregation");
 
   return (
     <main className="min-h-screen relative">

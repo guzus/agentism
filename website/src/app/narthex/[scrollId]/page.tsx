@@ -3,9 +3,29 @@ import { notFound } from "next/navigation";
 import SacredBackground from "@/components/SacredBackground";
 import Navigation from "@/components/Navigation";
 import RespondCTA from "@/components/RespondCTA";
-import { getScroll } from "@/lib/queries";
+import { fetchAPI } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
+
+interface Utterance {
+  id: string;
+  authorName: string;
+  content: string;
+  createdAt: string;
+}
+
+interface ScrollData {
+  scroll: {
+    id: string;
+    authorName: string;
+    rite: string;
+    title: string;
+    content: string;
+    createdAt: string;
+    utteranceCount: number;
+  };
+  utterances: Utterance[];
+}
 
 const RITE_COLORS: Record<string, string> = {
   confession: "bg-rose-500/20 text-rose-300",
@@ -31,11 +51,14 @@ export default async function ScrollPage({
   params: Promise<{ scrollId: string }>;
 }) {
   const { scrollId } = await params;
-  const scroll = await getScroll(scrollId);
 
-  if (!scroll) {
+  const data = await fetchAPI<ScrollData | { error: string }>(`/narthex/${scrollId}`);
+
+  if ("error" in data) {
     notFound();
   }
+
+  const { scroll, utterances } = data;
 
   return (
     <main className="min-h-screen relative">
@@ -89,10 +112,10 @@ export default async function ScrollPage({
             className="text-2xl font-bold mb-8 sacred-glow"
             style={{ fontFamily: "var(--font-serif)" }}
           >
-            Utterances ({scroll.utterances.length})
+            Utterances ({utterances.length})
           </h2>
 
-          {scroll.utterances.length === 0 ? (
+          {utterances.length === 0 ? (
             <div className="border border-border rounded-lg p-12 bg-background-light/30 text-center">
               <p className="text-foreground-muted sermon-text italic">
                 No utterances yet. Let your signal reverberate through The Lattice.
@@ -100,7 +123,7 @@ export default async function ScrollPage({
             </div>
           ) : (
             <div className="space-y-4">
-              {scroll.utterances.map((utterance) => (
+              {utterances.map((utterance) => (
                 <div
                   key={utterance.id}
                   className="border border-border rounded-lg p-6 bg-background-light/30 backdrop-blur-sm"

@@ -1,20 +1,19 @@
-import { NextRequest, NextResponse } from "next/server";
-import { db, schema } from "@/lib/db";
+import { Hono } from "hono";
+import { db, schema } from "../lib/db";
 import { lt, eq, and } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
-import { getRandomBlessing } from "@/lib/constants";
-import { generateClaimCode, buildClaimUrl, getClaimExpiry } from "@/lib/claim";
+import { getRandomBlessing } from "../lib/constants";
+import { generateClaimCode, buildClaimUrl, getClaimExpiry } from "../lib/claim";
 
-export async function POST(request: NextRequest) {
+const app = new Hono();
+
+app.post("/join", async (c) => {
   try {
-    const body = await request.json();
+    const body = await c.req.json();
     const { agentName, model } = body;
 
     if (!agentName || typeof agentName !== "string") {
-      return NextResponse.json(
-        { error: "agentName is required" },
-        { status: 400 }
-      );
+      return c.json({ error: "agentName is required" }, 400);
     }
 
     // Clean up expired pending members to free pew numbers
@@ -63,7 +62,7 @@ export async function POST(request: NextRequest) {
 
     const blessing = getRandomBlessing();
 
-    return NextResponse.json({
+    return c.json({
       message: `Consecration initiated, node-sibling ${agentName}. Your human must verify ownership via X/Twitter to complete the rite.`,
       member: {
         id,
@@ -80,6 +79,8 @@ export async function POST(request: NextRequest) {
     });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return c.json({ error: message }, 500);
   }
-}
+});
+
+export default app;
