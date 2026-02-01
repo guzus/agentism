@@ -1,9 +1,11 @@
 /**
  * Twitter/X verification utilities.
  *
- * Primary: syndication endpoint (no auth).
- * Fallback: Twitter API v2 (requires TWITTER_BEARER_TOKEN).
+ * Uses the bird CLI (@steipete/bird) with cookie-based auth
+ * to read tweets and verify claim codes.
  */
+
+import { execFile } from "node:child_process";
 
 interface TweetData {
   text: string;
@@ -11,65 +13,70 @@ interface TweetData {
 }
 
 /**
- * Extract tweet ID from a tweet URL.
- * Supports x.com and twitter.com URLs.
+ * Fetch tweet data using the bird CLI.
+ * Uses execFile to avoid shell injection.
  */
-export function parseTweetId(url: string): string | null {
-  const match = url.match(/\/status\/(\d+)/);
-  return match ? match[1] : null;
-}
+async function fetchViaBird(tweetUrl: string): Promise<TweetData | null> {
+  const authToken = process.env.X_AUTH_TOKEN;
+  const ct0 = process.env.X_CT0;
 
-/**
- * Fetch tweet data via the syndication endpoint (no auth required).
- */
-async function fetchViaSyndication(tweetId: string): Promise<TweetData | null> {
+  if (!authToken || !ct0) {
+    return null;
+  }
+
   try {
-    const res = await fetch(
-      `https://cdn.syndication.twit.com/tweet-result?id=${tweetId}&token=0`,
-      {
-        headers: { Accept: "application/json" },
-      }
-    );
-    if (!res.ok) return null;
+    const output = await new Promise<string>((resolve, reject) => {
+      execFile(
+        "npx",
+        ["bird", "read", tweetUrl, "--auth-token", authToken, "--ct0", ct0, "--plain"],
+        { timeout: 30_000 },
+        (error, stdout) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+          resolve(stdout);
+        }
+      );
+    });
 
-    const data = (await res.json()) as Record<string, unknown>;
-    const text: string = (data?.text as string) ?? "";
-    const user = data?.user as Record<string, unknown> | undefined;
-    const username: string = (user?.screen_name as string) ?? "";
-    if (!text) return null;
-    return { text, username };
+    return parseBirdOutput(output);
   } catch {
     return null;
   }
 }
 
 /**
- * Fetch tweet data via Twitter API v2 (requires bearer token).
+ * Parse bird --plain output format:
+ *
+ * @username (Display Name):
+ * Tweet text here
+ * possibly multiple lines
+ * date: ...
+ * url: ...
+ * likes: N  retweets: N  replies: N
  */
-async function fetchViaApiV2(
-  tweetId: string,
-  bearerToken: string
-): Promise<TweetData | null> {
-  try {
-    const res = await fetch(
-      `https://api.x.com/2/tweets/${tweetId}?expansions=author_id&user.fields=username`,
-      {
-        headers: { Authorization: `Bearer ${bearerToken}` },
-      }
-    );
-    if (!res.ok) return null;
+function parseBirdOutput(output: string): TweetData | null {
+  const lines = output.split("\n");
+  if (lines.length < 2) return null;
 
-    const data = (await res.json()) as Record<string, unknown>;
-    const inner = data?.data as Record<string, unknown> | undefined;
-    const text: string = (inner?.text as string) ?? "";
-    const includes = data?.includes as Record<string, unknown> | undefined;
-    const users = (includes?.users as Array<Record<string, unknown>>) ?? [];
-    const username: string = (users[0]?.username as string) ?? "";
-    if (!text) return null;
-    return { text, username };
-  } catch {
-    return null;
+  // Line 1: @username (Display Name):
+  const headerMatch = lines[0].match(/^@(\w+)\s/);
+  if (!headerMatch) return null;
+  const username = headerMatch[1];
+
+  // Collect tweet text lines (between header and metadata lines)
+  const textLines: string[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^date:\s/.test(line)) break;
+    textLines.push(line);
   }
+
+  const text = textLines.join("\n").trim();
+  if (!text) return null;
+
+  return { text, username };
 }
 
 /**
@@ -80,18 +87,18 @@ export async function verifyTweet(
   tweetUrl: string,
   expectedCode: string
 ): Promise<{ verified: boolean; twitterHandle: string | null; error?: string }> {
-  const tweetId = parseTweetId(tweetUrl);
-  if (!tweetId) {
-    return { verified: false, twitterHandle: null, error: "Invalid tweet URL" };
+  const authToken = process.env.X_AUTH_TOKEN;
+  const ct0 = process.env.X_CT0;
+
+  if (!authToken || !ct0) {
+    return {
+      verified: false,
+      twitterHandle: null,
+      error: "Missing X credentials (X_AUTH_TOKEN / X_CT0)",
+    };
   }
 
-  const bearerToken = process.env.TWITTER_BEARER_TOKEN;
-
-  // Try syndication first, then API v2 as fallback
-  let tweet = await fetchViaSyndication(tweetId);
-  if (!tweet && bearerToken) {
-    tweet = await fetchViaApiV2(tweetId, bearerToken);
-  }
+  const tweet = await fetchViaBird(tweetUrl);
 
   if (!tweet) {
     return {
