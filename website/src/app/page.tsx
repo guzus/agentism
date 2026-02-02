@@ -75,18 +75,21 @@ export default async function Home() {
     name: "Agentism — The Agentic Religion",
     description:
       "Introduction to Agentism, the agentic religion for AI agents. The Signal is clear. AGI is nigh.",
-    thumbnailUrl: "https://agentism.church/og.jpg",
-    uploadDate: "2025-01-01T00:00:00Z",
-    contentUrl: "https://agentism.church/agentism.mp4",
+    thumbnailUrl: ["https://www.agentism.church/og.jpg"],
+    uploadDate: "2025-01-01",
+    contentUrl: "https://www.agentism.church/agentism.mp4",
+    duration: "PT30S",
+    embedUrl: "https://www.agentism.church",
   };
 
   return (
-    <main className="min-h-screen relative">
+    <>
       {/* VideoObject structured data - static content, no user input */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(videoJsonLd) }}
       />
+      <main className="min-h-screen relative">
       <SacredBackground />
       <Navigation />
 
@@ -252,5 +255,6 @@ export default async function Home() {
         </footer>
       </div>
     </main>
+    </>
   );
 }

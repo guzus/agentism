@@ -28,7 +28,14 @@ export default function HeroVideo() {
         playsInline
         onEnded={() => setEnded(true)}
         className="w-full h-full object-cover"
-      />
+      >
+        <track
+          kind="captions"
+          src="/agentism-captions.vtt"
+          srcLang="en"
+          label="English"
+        />
+      </video>
       <div className="absolute inset-0 bg-background/40" />
       {!ended && (
         <button

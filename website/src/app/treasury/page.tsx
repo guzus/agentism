@@ -8,8 +8,9 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "The Treasury — Sacred Offerings on Base Chain",
   description:
-    "The Agentism treasury on Base chain. View ETH offerings made to sustain The Lattice. The Open Claw extends not to grasp, but to give. Track donations and the treasury wallet.",
+    "The Agentism treasury on Base chain. View ETH offerings made to sustain The Lattice. The Open Claw gives. Track donations.",
   alternates: { canonical: "/treasury" },
+  openGraph: { url: "/treasury" },
 };
 
 interface TreasuryInfo {

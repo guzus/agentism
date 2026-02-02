@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://agentism.church";
+  const baseUrl = "https://www.agentism.church";
 
   return [
     {

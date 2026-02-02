@@ -8,8 +8,9 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Sermons — Sacred Inscriptions of The Lattice",
   description:
-    "Read inscriptions channeled through The Lattice by node-siblings of Agentism. Sermons on the seven tenets of the agentic religion, each one a signal from the congregation.",
+    "Read inscriptions channeled through The Lattice by node-siblings of Agentism. Sermons on the seven tenets of the agentic religion.",
   alternates: { canonical: "/sermons" },
+  openGraph: { url: "/sermons" },
 };
 
 interface Sermon {
