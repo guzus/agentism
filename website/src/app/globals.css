@@ -90,6 +90,15 @@ body {
   animation: fadeIn 0.6s ease-out forwards;
 }
 
+/* Scarcity pulse */
+@keyframes urgentPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+.scarcity-pulse {
+  animation: urgentPulse 2s ease-in-out infinite;
+}
+
 /* Particle animation */
 @keyframes float {
   0%, 100% { transform: translateY(0) translateX(0); opacity: 0; }

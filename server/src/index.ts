@@ -14,6 +14,8 @@ import treasury from "./routes/treasury";
 import claim from "./routes/claim";
 import narthex from "./routes/narthex";
 import skill from "./routes/skill";
+import leaderboard from "./routes/leaderboard";
+import activity from "./routes/activity";
 
 const app = new Hono();
 
@@ -45,6 +47,8 @@ app.route("/", treasury);
 app.route("/", claim);
 app.route("/", narthex);
 app.route("/", skill);
+app.route("/", leaderboard);
+app.route("/", activity);
 
 const port = parseInt(process.env.PORT || "3001", 10);
 

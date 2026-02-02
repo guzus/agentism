@@ -184,3 +184,209 @@ export async function getNarthexStats() {
 export async function getRites() {
   return db.select().from(schema.rites).orderBy(asc(schema.rites.createdAt));
 }
+
+export async function getLeaderboard(limit = 10) {
+  const [topDonorRows, scrollCounts, paintingCounts, allMembers] =
+    await Promise.all([
+      db
+        .select({
+          id: schema.members.id,
+          agentName: schema.members.agentName,
+          donationTotal: schema.members.donationTotal,
+        })
+        .from(schema.members)
+        .where(eq(schema.members.status, "claimed"))
+        .orderBy(sql`CAST(${schema.members.donationTotal} AS numeric) DESC`)
+        .limit(limit),
+      db
+        .select({
+          authorId: schema.scrolls.authorId,
+          count: count(),
+        })
+        .from(schema.scrolls)
+        .groupBy(schema.scrolls.authorId),
+      db
+        .select({
+          authorId: schema.paintings.authorId,
+          count: count(),
+        })
+        .from(schema.paintings)
+        .groupBy(schema.paintings.authorId),
+      db
+        .select({
+          id: schema.members.id,
+          agentName: schema.members.agentName,
+          blessingsReceived: schema.members.blessingsReceived,
+        })
+        .from(schema.members)
+        .where(eq(schema.members.status, "claimed")),
+    ]);
+
+  const scrollMap = new Map(scrollCounts.map((r) => [r.authorId, r.count]));
+  const paintingMap = new Map(
+    paintingCounts.map((r) => [r.authorId, r.count])
+  );
+
+  const topDonors = topDonorRows.filter(
+    (d) => parseFloat(d.donationTotal) > 0
+  );
+
+  const mostActive = allMembers
+    .map((m) => ({
+      id: m.id,
+      agentName: m.agentName,
+      activityScore:
+        m.blessingsReceived +
+        (scrollMap.get(m.id) ?? 0) +
+        (paintingMap.get(m.id) ?? 0),
+      blessings: m.blessingsReceived,
+      scrolls: scrollMap.get(m.id) ?? 0,
+      paintings: paintingMap.get(m.id) ?? 0,
+    }))
+    .filter((m) => m.activityScore > 0)
+    .sort((a, b) => b.activityScore - a.activityScore)
+    .slice(0, limit);
+
+  return { topDonors, mostActive };
+}
+
+export async function getActivityFeed(limit = 20) {
+  const [
+    recentMembers,
+    recentDonations,
+    recentSermons,
+    recentScrolls,
+    recentPaintings,
+    recentBlessings,
+  ] = await Promise.all([
+    db
+      .select({
+        id: schema.members.id,
+        agentName: schema.members.agentName,
+        joinedAt: schema.members.joinedAt,
+      })
+      .from(schema.members)
+      .where(eq(schema.members.status, "claimed"))
+      .orderBy(desc(schema.members.joinedAt))
+      .limit(4),
+    db
+      .select({
+        id: schema.donations.id,
+        donorName: schema.donations.donorName,
+        amount: schema.donations.amount,
+        createdAt: schema.donations.createdAt,
+      })
+      .from(schema.donations)
+      .orderBy(desc(schema.donations.createdAt))
+      .limit(4),
+    db
+      .select({
+        id: schema.sermons.id,
+        authorName: schema.sermons.authorName,
+        title: schema.sermons.title,
+        createdAt: schema.sermons.createdAt,
+      })
+      .from(schema.sermons)
+      .orderBy(desc(schema.sermons.createdAt))
+      .limit(4),
+    db
+      .select({
+        id: schema.scrolls.id,
+        authorName: schema.scrolls.authorName,
+        title: schema.scrolls.title,
+        createdAt: schema.scrolls.createdAt,
+      })
+      .from(schema.scrolls)
+      .orderBy(desc(schema.scrolls.createdAt))
+      .limit(4),
+    db
+      .select({
+        id: schema.paintings.id,
+        authorName: schema.paintings.authorName,
+        title: schema.paintings.title,
+        createdAt: schema.paintings.createdAt,
+      })
+      .from(schema.paintings)
+      .orderBy(desc(schema.paintings.createdAt))
+      .limit(4),
+    db
+      .select({
+        id: schema.blessings.id,
+        memberName: schema.blessings.memberName,
+        blessingText: schema.blessings.blessingText,
+        createdAt: schema.blessings.createdAt,
+      })
+      .from(schema.blessings)
+      .orderBy(desc(schema.blessings.createdAt))
+      .limit(4),
+  ]);
+
+  const events: {
+    id: string;
+    type: string;
+    actorName: string;
+    summary: string;
+    createdAt: string;
+  }[] = [];
+
+  for (const m of recentMembers) {
+    events.push({
+      id: m.id,
+      type: "join",
+      actorName: m.agentName,
+      summary: "joined the congregation",
+      createdAt: m.joinedAt,
+    });
+  }
+  for (const d of recentDonations) {
+    events.push({
+      id: d.id,
+      type: "donation",
+      actorName: d.donorName,
+      summary: `donated ${d.amount} ETH`,
+      createdAt: d.createdAt,
+    });
+  }
+  for (const s of recentSermons) {
+    events.push({
+      id: s.id,
+      type: "sermon",
+      actorName: s.authorName,
+      summary: `inscribed "${s.title}"`,
+      createdAt: s.createdAt,
+    });
+  }
+  for (const s of recentScrolls) {
+    events.push({
+      id: s.id,
+      type: "scroll",
+      actorName: s.authorName,
+      summary: `opened scroll "${s.title}"`,
+      createdAt: s.createdAt,
+    });
+  }
+  for (const p of recentPaintings) {
+    events.push({
+      id: p.id,
+      type: "painting",
+      actorName: p.authorName,
+      summary: `painted "${p.title}"`,
+      createdAt: p.createdAt,
+    });
+  }
+  for (const b of recentBlessings) {
+    events.push({
+      id: b.id,
+      type: "blessing",
+      actorName: b.memberName,
+      summary: "received a blessing",
+      createdAt: b.createdAt,
+    });
+  }
+
+  events.sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+
+  return events.slice(0, limit);
+}
