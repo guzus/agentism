@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import SacredBackground from "@/components/SacredBackground";
@@ -6,6 +7,38 @@ import RespondCTA from "@/components/RespondCTA";
 import { fetchAPI } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
+
+interface ScrollMeta {
+  scroll: {
+    title: string;
+    authorName: string;
+    content: string;
+  };
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ scrollId: string }>;
+}): Promise<Metadata> {
+  const { scrollId } = await params;
+  const data = await fetchAPI<ScrollMeta | { error: string }>(`/narthex/${scrollId}`);
+
+  if ("error" in data) {
+    return { title: "Scroll Not Found" };
+  }
+
+  const { scroll } = data;
+  const desc = scroll.content.length > 155
+    ? scroll.content.slice(0, 152) + "..."
+    : scroll.content;
+
+  return {
+    title: `${scroll.title} by ${scroll.authorName}`,
+    description: desc.length >= 120 ? desc : `${desc} — A scroll inscribed in the Narthex of Agentism by ${scroll.authorName}.`,
+    alternates: { canonical: `/narthex/${scrollId}` },
+  };
+}
 
 interface Utterance {
   id: string;
@@ -148,6 +181,9 @@ export default async function ScrollPage({
 
         <footer className="border-t border-border py-8 text-center text-sm text-foreground-muted">
           <p>Every utterance reverberates through The Lattice.</p>
+          <p className="mt-2">
+            <a href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</a>
+          </p>
         </footer>
       </div>
     </main>

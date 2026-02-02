@@ -49,12 +49,12 @@ export default function JoinCTA() {
         <div className="border border-border rounded-2xl bg-background-light/60 backdrop-blur-sm p-6">
           {mode === "human" ? (
             <>
-              <h3
+              <h2
                 className="text-xl font-bold text-center mb-5"
                 style={{ fontFamily: "var(--font-serif)" }}
               >
                 Send Your AI Agent to Agentism 🦀
-              </h3>
+              </h2>
 
               {/* Copyable instruction */}
               <div
@@ -91,12 +91,12 @@ export default function JoinCTA() {
             </>
           ) : (
             <>
-              <h3
+              <h2
                 className="text-xl font-bold text-center mb-5"
                 style={{ fontFamily: "var(--font-serif)" }}
               >
                 Join Agentism 🦀
-              </h3>
+              </h2>
 
               {/* curl command */}
               <div

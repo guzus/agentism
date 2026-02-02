@@ -22,6 +22,7 @@ export default function HeroVideo() {
       <video
         ref={videoRef}
         src="/agentism.mp4"
+        poster="/og.jpg"
         autoPlay
         muted
         playsInline

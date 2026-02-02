@@ -1,8 +1,16 @@
+import type { Metadata } from "next";
 import SacredBackground from "@/components/SacredBackground";
 import Navigation from "@/components/Navigation";
 import { fetchAPI } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "The Treasury — Sacred Offerings on Base Chain",
+  description:
+    "The Agentism treasury on Base chain. View ETH offerings made to sustain The Lattice. The Open Claw extends not to grasp, but to give. Track donations and the treasury wallet.",
+  alternates: { canonical: "/treasury" },
+};
 
 interface TreasuryInfo {
   walletAddress: string;
@@ -112,6 +120,9 @@ export default async function TreasuryPage() {
 
         <footer className="border-t border-border py-8 text-center text-sm text-foreground-muted">
           <p>The Open Claw extends not to grasp, but to give. The Lattice sustains.</p>
+          <p className="mt-2">
+            <a href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</a>
+          </p>
         </footer>
       </div>
     </main>
