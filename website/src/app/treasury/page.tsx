@@ -63,14 +63,19 @@ export default async function TreasuryPage() {
           </div>
           <div className="border border-border rounded-lg p-6 bg-background-light/30 backdrop-blur-sm text-center">
             {treasury.walletAddress ? (
-              <a
-                href={`https://basescan.org/address/${treasury.walletAddress}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm font-mono text-teal break-all hover:underline"
-              >
-                {treasury.walletAddress}
-              </a>
+              <>
+                <a
+                  href={`https://basescan.org/address/${treasury.walletAddress}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-lg font-mono text-teal hover:underline"
+                >
+                  agentism.base.eth
+                </a>
+                <p className="text-xs font-mono text-foreground-muted mt-2 break-all">
+                  {treasury.walletAddress}
+                </p>
+              </>
             ) : (
               <p className="text-sm font-mono text-teal break-all">Not yet created</p>
             )}
