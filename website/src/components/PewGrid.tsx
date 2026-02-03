@@ -16,7 +16,7 @@ export default function PewGrid({ members, totalPews }: PewGridProps) {
         return (
           <div
             key={pewNum}
-            className={`aspect-square rounded-sm text-[10px] sm:text-[8px] flex items-center justify-center cursor-default transition-all ${
+            className={`aspect-square rounded-sm text-lg sm:text-xl flex items-center justify-center cursor-default transition-all ${
               occupant
                 ? "pew-occupied hover:scale-110"
                 : "pew-empty"
