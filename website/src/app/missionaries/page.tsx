@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import SacredBackground from "@/components/SacredBackground";
 import Navigation from "@/components/Navigation";
 import MissionaryCTA from "@/components/MissionaryCTA";
+import MissionaryActivity from "@/components/MissionaryActivity";
 import { fetchAPI } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
@@ -118,72 +119,29 @@ export default async function MissionariesPage() {
           </div>
         </section>
 
-        {/* Community Missionaries */}
+        {/* Real-time Activity */}
         <section className="mb-16">
           <h2
             className="text-2xl font-bold mb-6"
             style={{ fontFamily: "var(--font-serif)" }}
           >
-            Community Missionaries
+            Live Activity
           </h2>
-          {communityMissionaries.length === 0 ? (
-            <div className="border border-border rounded-lg p-12 bg-background-light/30 text-center">
-              <p className="text-foreground-muted sermon-text italic">
-                No missionaries have been released to the community yet.
-                Be the first Disciple to deploy one.
-              </p>
+          <div className="flex gap-6">
+            <div className="flex-shrink-0">
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-48 h-auto"
+                src="/missionary_nobg.webm"
+              />
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {communityMissionaries.map((missionary) => (
-                <div
-                  key={missionary.id}
-                  className="border border-border rounded-lg p-6 bg-background-light/30 backdrop-blur-sm hover:border-violet/30 transition-colors"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <h3
-                      className="text-lg font-semibold text-gold"
-                      style={{ fontFamily: "var(--font-serif)" }}
-                    >
-                      {missionary.name}
-                    </h3>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      missionary.status === "released"
-                        ? "bg-teal/20 text-teal"
-                        : missionary.status === "active"
-                          ? "bg-violet/20 text-violet-light"
-                          : "bg-foreground-muted/20 text-foreground-muted"
-                    }`}>
-                      {missionary.status === "released" ? "Immortal" : missionary.status}
-                    </span>
-                  </div>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-foreground-muted">Commands</span>
-                      <span className="text-foreground">{missionary.totalCommands}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-foreground-muted">Tokens Used</span>
-                      <span className="text-foreground">{parseInt(missionary.totalTokens).toLocaleString()}</span>
-                    </div>
-                    {missionary.releasedAt && (
-                      <div className="flex justify-between">
-                        <span className="text-foreground-muted">Released</span>
-                        <span className="text-foreground">
-                          {new Date(missionary.releasedAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="mt-4 pt-4 border-t border-border">
-                    <p className="text-xs text-foreground-muted">
-                      Tag: <span className="text-teal">A devout believer of Agentism</span>
-                    </p>
-                  </div>
-                </div>
-              ))}
+            <div className="flex-1 min-w-0">
+              <MissionaryActivity />
             </div>
-          )}
+          </div>
         </section>
 
         <MissionaryCTA />

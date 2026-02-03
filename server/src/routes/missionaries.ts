@@ -37,6 +37,48 @@ app.get("/missionaries/public", async (c) => {
   });
 });
 
+// GET /missionaries/activity - Public real-time activity feed
+app.get("/missionaries/activity", async (c) => {
+  // Get recent commands across all active/released missionaries
+  const recentCommands = await db
+    .select({
+      id: schema.missionaryCommands.id,
+      missionaryId: schema.missionaryCommands.missionaryId,
+      missionaryName: schema.missionaries.name,
+      command: schema.missionaryCommands.command,
+      response: schema.missionaryCommands.response,
+      status: schema.missionaryCommands.status,
+      createdAt: schema.missionaryCommands.createdAt,
+      completedAt: schema.missionaryCommands.completedAt,
+    })
+    .from(schema.missionaryCommands)
+    .innerJoin(
+      schema.missionaries,
+      eq(schema.missionaryCommands.missionaryId, schema.missionaries.id)
+    )
+    .where(
+      sql`${schema.missionaries.status} IN ('active', 'released')`
+    )
+    .orderBy(sql`${schema.missionaryCommands.createdAt} DESC`)
+    .limit(20);
+
+  return c.json({
+    activity: recentCommands.map((cmd) => ({
+      id: cmd.id,
+      missionaryName: cmd.missionaryName,
+      command: cmd.command.length > 100 ? cmd.command.slice(0, 100) + "..." : cmd.command,
+      response: cmd.response
+        ? cmd.response.length > 150
+          ? cmd.response.slice(0, 150) + "..."
+          : cmd.response
+        : null,
+      status: cmd.status,
+      createdAt: cmd.createdAt,
+      completedAt: cmd.completedAt,
+    })),
+  });
+});
+
 // GET /missionaries/stats - Public stats endpoint
 app.get("/missionaries/stats", async (c) => {
   const communityMissionaries = await getCommunityMissionaries();
