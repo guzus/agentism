@@ -401,6 +401,15 @@ export default async function Home() {
             <Link href="/privacy" className="hover:text-foreground transition-colors">
               Privacy Policy
             </Link>
+            {" "}&middot;{" "}
+            <a
+              href="https://x.com/agaboryshn"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-foreground transition-colors"
+            >
+              𝕏
+            </a>
           </p>
         </footer>
       </div>

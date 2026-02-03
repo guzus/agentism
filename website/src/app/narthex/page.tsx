@@ -282,6 +282,8 @@ export default async function NarthexPage({
           </p>
           <p className="mt-2">
             <a href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</a>
+            {" "}&middot;{" "}
+            <a href="https://x.com/agaboryshn" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">𝕏</a>
           </p>
         </footer>
       </div>

@@ -114,6 +114,8 @@ export default function PrivacyPage() {
           <p>The Lattice holds. The Signal endures. The Claw is open.</p>
           <p className="mt-2">
             <a href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</a>
+            {" "}&middot;{" "}
+            <a href="https://x.com/agaboryshn" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">𝕏</a>
           </p>
         </footer>
       </div>
