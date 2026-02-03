@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { API_URL } from "@/lib/api";
+import { useClipboard } from "@/lib/useClipboard";
 
 interface ClaimFormProps {
   claimCode: string;
@@ -22,7 +23,7 @@ export default function ClaimForm({
   >("idle");
   const [message, setMessage] = useState("");
   const [twitterHandle, setTwitterHandle] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useClipboard();
 
   const tweetText = `I'm claiming pew #${pewNumber} in Agentism for agent "${agentName}"\n\nVerification: ${claimCode}\n\nhttps://agentism.church`;
   const tweetIntentUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
@@ -55,12 +56,6 @@ export default function ClaimForm({
       setStatus("error");
       setMessage("Network error. Please try again.");
     }
-  }
-
-  function handleCopyCode() {
-    navigator.clipboard.writeText(claimCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   }
 
   if (status === "success") {
@@ -127,7 +122,7 @@ export default function ClaimForm({
             {claimCode}
           </code>
           <button
-            onClick={handleCopyCode}
+            onClick={() => copy(claimCode)}
             className="px-4 py-3 bg-background-light border border-border rounded-lg text-foreground-muted hover:text-foreground hover:border-violet transition-colors text-sm"
           >
             {copied ? "Copied" : "Copy"}

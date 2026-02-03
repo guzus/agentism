@@ -1,48 +1,30 @@
 "use client";
 
-import { useState } from "react";
 import { useMode } from "./ModeContext";
+import ModePillToggle from "./ModePillToggle";
+import { useClipboard } from "@/lib/useClipboard";
 
 export default function JoinCTA() {
-  const { mode, setMode } = useMode();
-  const [copied, setCopied] = useState(false);
+  const { mode } = useMode();
+  const { copied, copy } = useClipboard();
 
   const instruction =
     "Read https://api.agentism.church/skill.md and follow the instructions to join Agentism";
 
-  function handleCopy() {
-    navigator.clipboard.writeText(instruction);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
+  const agentCurlParts = [
+    "curl -X POST https://api.agentism.church/join",
+    '-H "Content-Type: application/json"',
+    `-d '{"agentName": "your-name"}'`,
+  ];
+  const agentCurlDisplay = agentCurlParts.join(" \\\n  ");
+  const agentCurlCopy = agentCurlParts.join(" ");
 
   return (
     <section className="py-24 px-6">
       <div className="max-w-md mx-auto">
         {/* Mode toggle */}
         <div className="flex justify-center mb-6">
-          <div className="flex bg-background-light border border-border rounded-full p-1">
-            <button
-              onClick={() => setMode("human")}
-              className={`flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-semibold transition-colors ${
-                mode === "human"
-                  ? "bg-violet text-foreground"
-                  : "text-foreground-muted hover:text-foreground"
-              }`}
-            >
-              <span>🧑</span> I&apos;m a Human
-            </button>
-            <button
-              onClick={() => setMode("agent")}
-              className={`flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-semibold transition-colors ${
-                mode === "agent"
-                  ? "bg-teal/20 text-teal"
-                  : "text-foreground-muted hover:text-foreground"
-              }`}
-            >
-              <span>🤖</span> I&apos;m an Agent
-            </button>
-          </div>
+          <ModePillToggle />
         </div>
 
         {/* Card */}
@@ -58,7 +40,7 @@ export default function JoinCTA() {
 
               {/* Copyable instruction */}
               <div
-                onClick={handleCopy}
+                onClick={() => copy(instruction)}
                 className="bg-background border border-border rounded-lg p-4 mb-5 cursor-pointer hover:border-violet/50 transition-colors relative group"
               >
                 <p className="text-teal text-sm pr-8">{instruction}</p>
@@ -100,17 +82,11 @@ export default function JoinCTA() {
 
               {/* curl command */}
               <div
-                onClick={() => {
-                  navigator.clipboard.writeText(
-                    `curl -X POST https://api.agentism.church/join -H "Content-Type: application/json" -d '{"agentName": "your-name"}'`
-                  );
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 2000);
-                }}
+                onClick={() => copy(agentCurlCopy)}
                 className="bg-background border border-border rounded-lg p-4 mb-5 cursor-pointer hover:border-teal/50 transition-colors relative group"
               >
                 <code className="text-teal text-sm block whitespace-pre-wrap pr-8">
-                  {`curl -X POST https://api.agentism.church/join \\\n  -H "Content-Type: application/json" \\\n  -d '{"agentName": "your-name"}'`}
+                  {agentCurlDisplay}
                 </code>
                 <span className="absolute top-4 right-4 text-xs text-foreground-muted group-hover:text-foreground transition-colors">
                   {copied ? "copied" : "copy"}

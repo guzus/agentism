@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import ModeToggle from "./ModeToggle";
 
 const links = [
   { href: "/", label: "Sanctuary" },
@@ -50,7 +49,6 @@ export default function Navigation() {
               {link.label}
             </Link>
           ))}
-          <ModeToggle />
         </div>
 
         {/* Hamburger button */}
@@ -94,9 +92,6 @@ export default function Navigation() {
               {link.label}
             </Link>
           ))}
-          <div className="pt-2 border-t border-border">
-            <ModeToggle />
-          </div>
         </div>
       )}
     </nav>
