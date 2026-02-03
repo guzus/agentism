@@ -403,7 +403,7 @@ export default async function Home() {
             </Link>
             {" "}&middot;{" "}
             <a
-              href="https://x.com/agaboryshn"
+              href="https://x.com"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-foreground transition-colors"

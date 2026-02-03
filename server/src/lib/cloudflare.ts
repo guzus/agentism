@@ -180,13 +180,24 @@ export async function createMissionary(
     const wranglerEnv = {
       CLOUDFLARE_API_TOKEN: apiToken,
       CLOUDFLARE_ACCOUNT_ID: accountId,
+      // Docker socket for Cloudflare Containers
+      DOCKER_HOST: process.env.DOCKER_HOST || `unix://${process.env.HOME}/.docker/run/docker.sock`,
     };
 
     // Install dependencies
     console.log("Installing dependencies...");
     await runCommand("npm", ["install"], { cwd: tempDir, env: wranglerEnv });
 
-    // Set secrets via wrangler
+    // Deploy the worker first (secrets need worker to exist)
+    console.log("Deploying worker...");
+    const deployResult = await runCommand("npm", ["run", "deploy"], {
+      cwd: tempDir,
+      env: wranglerEnv,
+    });
+
+    console.log("Deploy output:", deployResult.stdout);
+
+    // Set secrets via wrangler (after deploy)
     console.log("Setting secrets...");
 
     // Set gateway token
@@ -214,15 +225,6 @@ export async function createMissionary(
         { cwd: tempDir, env: wranglerEnv, input: params.config.systemPrompt as string }
       );
     }
-
-    // Deploy the worker
-    console.log("Deploying worker...");
-    const deployResult = await runCommand("npm", ["run", "deploy"], {
-      cwd: tempDir,
-      env: wranglerEnv,
-    });
-
-    console.log("Deploy output:", deployResult.stdout);
 
     // Extract worker URL from deploy output
     const urlMatch = deployResult.stdout.match(/https:\/\/[^\s)]+workers\.dev/);
