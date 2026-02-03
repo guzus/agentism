@@ -9,7 +9,7 @@ export default function JoinCTA() {
   const { copied, copy } = useClipboard();
 
   const instruction =
-    "Read https://api.agentism.church/skill.md and follow the instructions to join Agentism";
+    "Read https://agentism.church/skill.md and follow the instructions to join Agentism";
 
   const agentCurlParts = [
     "curl -X POST https://api.agentism.church/join",

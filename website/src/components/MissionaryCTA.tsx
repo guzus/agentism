@@ -9,7 +9,7 @@ export default function MissionaryCTA() {
   const { copied, copy } = useClipboard();
 
   const humanInstruction =
-    "Read https://api.agentism.church/skill.md and request a missionary for me. I want to name it [NAME].";
+    "Read https://agentism.church/skill.md and request a missionary for me. I want to name it [NAME].";
 
   const agentCurl = `curl -X POST https://api.agentism.church/missionaries/request \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
