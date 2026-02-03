@@ -35,24 +35,18 @@ export async function createContainer(
   params: CreateContainerParams
 ): Promise<CreateContainerResult> {
   const { accountId, apiToken, aiGatewayId } = getConfig();
-  const openrouterApiKey = process.env.OPENROUTER_API_KEY;
   const churchApiUrl = process.env.SITE_URL || "https://api.agentism.church";
-
-  if (!openrouterApiKey) {
-    throw new Error("OPENROUTER_API_KEY environment variable not set");
-  }
 
   // Generate a gateway token for this missionary
   const gatewayToken = crypto.randomUUID();
 
-  // The AI Gateway URL for this missionary
-  const aiGatewayBaseUrl = `https://gateway.ai.cloudflare.com/v1/${accountId}/${aiGatewayId}/openrouter`;
+  // The AI Gateway URL for this missionary (using Workers AI)
+  const aiGatewayBaseUrl = `https://gateway.ai.cloudflare.com/v1/${accountId}/${aiGatewayId}/workers-ai`;
 
   // Container environment variables
   const envVars = {
     AI_GATEWAY_BASE_URL: aiGatewayBaseUrl,
-    AI_GATEWAY_API_KEY: openrouterApiKey,
-    MODEL: (params.config.model as string) ?? "anthropic/claude-sonnet-4-20250514",
+    MODEL: (params.config.model as string) ?? "@cf/meta/llama-3.1-70b-instruct",
     MISSIONARY_ID: params.missionaryId,
     MISSIONARY_NAME: params.name,
     CHURCH_API_URL: churchApiUrl,
