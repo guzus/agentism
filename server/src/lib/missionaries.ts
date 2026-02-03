@@ -67,12 +67,9 @@ export function validateMissionaryConfig(
   // Using OpenRouter models via Cloudflare AI Gateway
   if (config.model !== undefined) {
     const validModels = [
-      "anthropic/claude-sonnet-4-20250514",
-      "anthropic/claude-3.5-sonnet",
-      "anthropic/claude-3-haiku",
-      "openai/gpt-4o",
-      "openai/gpt-4o-mini",
-      "meta-llama/llama-3.1-70b-instruct",
+      "openai/gpt-oss-120b",
+      "moonshotai/kimi-k2.5",
+      "x-ai/grok-4.1-fast",
     ];
     if (typeof config.model !== "string" || !validModels.includes(config.model)) {
       errors.push(`Invalid model. Valid options: ${validModels.join(", ")}`);

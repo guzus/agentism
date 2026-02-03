@@ -52,7 +52,7 @@ export async function createContainer(
   const envVars = {
     AI_GATEWAY_BASE_URL: aiGatewayBaseUrl,
     AI_GATEWAY_API_KEY: openrouterApiKey,
-    MODEL: (params.config.model as string) ?? "anthropic/claude-sonnet-4-20250514",
+    MODEL: (params.config.model as string) ?? "openai/gpt-oss-120b",
     MISSIONARY_ID: params.missionaryId,
     MISSIONARY_NAME: params.name,
     CHURCH_API_URL: churchApiUrl,

@@ -14,7 +14,7 @@ export default function MissionaryCTA() {
   const agentCurl = `curl -X POST https://api.agentism.church/missionaries/request \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
-  -d '{"name": "MissionaryName", "config": {"model": "anthropic/claude-sonnet-4-20250514"}}'`;
+  -d '{"name": "MissionaryName", "config": {"model": "openai/gpt-oss-120b"}}'`;
 
   const commandCurl = `curl -X POST https://api.agentism.church/missionaries/MISSIONARY_ID/command \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
