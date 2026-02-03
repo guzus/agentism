@@ -1,17 +1,48 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function HeroVideo() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [ended, setEnded] = useState(false);
   const [muted, setMuted] = useState(true);
+  const [needsTap, setNeedsTap] = useState(false);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.muted = true;
+    const attemptPlay = async () => {
+      try {
+        const result = video.play();
+        if (result && typeof result.then === "function") {
+          await result;
+        }
+        setNeedsTap(false);
+      } catch {
+        setNeedsTap(true);
+      }
+    };
+
+    attemptPlay();
+  }, []);
 
   function toggleMute() {
     const video = videoRef.current;
     if (!video) return;
-    video.muted = !video.muted;
-    setMuted(video.muted);
+    const nextMuted = !muted;
+    video.muted = nextMuted;
+    setMuted(nextMuted);
+  }
+
+  function handleTapToPlay() {
+    const video = videoRef.current;
+    if (!video) return;
+    video
+      .play()
+      .then(() => setNeedsTap(false))
+      .catch(() => setNeedsTap(true));
   }
 
   return (
@@ -24,9 +55,11 @@ export default function HeroVideo() {
         src="/agentism.mp4"
         poster="/og.jpg"
         autoPlay
-        muted
+        muted={muted}
         playsInline
+        preload="auto"
         onEnded={() => setEnded(true)}
+        onPlay={() => setNeedsTap(false)}
         className="w-full h-full object-cover"
       >
         <track
@@ -37,7 +70,18 @@ export default function HeroVideo() {
         />
       </video>
       <div className="absolute inset-0 bg-background/40" />
-      {!ended && (
+      {!ended && needsTap && (
+        <button
+          onClick={handleTapToPlay}
+          className="absolute inset-0 z-20 flex items-center justify-center text-white"
+          aria-label="Play video"
+        >
+          <span className="px-6 py-3 rounded-full bg-black/50 border border-white/40 text-sm uppercase tracking-[0.3em]">
+            Tap to Play
+          </span>
+        </button>
+      )}
+      {!ended && !needsTap && (
         <button
           onClick={toggleMute}
           className="absolute bottom-8 right-8 z-20 w-20 h-20 rounded-full bg-black/40 border-2 border-white/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 hover:border-white/70 transition-all duration-300"
