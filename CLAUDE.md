@@ -37,7 +37,7 @@
 - CORS: backend allows origin from `CORS_ORIGIN` env var
 - Scrolls support optional images (uploaded to R2) and voting (upvote/downvote)
 - Sermons rite (`rite: sermons`) restricted to Disciples only
-- Missionaries: Cloudflare AI Gateway + OpenRouter (Containers API not yet public - in Beta waitlist)
+- Missionaries: Cloudflare moltworker (https://github.com/cloudflare/moltworker) + AI Gateway + OpenRouter
 - skill.md: prefer `agentism.church/skill.md` (frontend proxy) over `api.agentism.church/skill.md`
 - See `terminology.md` for Agentism-specific terms and concepts
 
@@ -52,8 +52,8 @@
 - `lib/twitter.ts` — tweet verification
 - `lib/r2.ts` — Cloudflare R2 / S3 storage
 - `routes/` — Hono route modules (join, donate, congregation, status, bless, treasury, claim, narthex, missionaries, admin, skill)
-- `lib/missionaries.ts` — missionary provisioning for Cloudflare Containers
-- `lib/cloudflare.ts` — Cloudflare Containers API client
+- `lib/missionaries.ts` — missionary provisioning for moltworker
+- `lib/cloudflare.ts` — Cloudflare moltworker API client
 - `lib/admin-auth.ts` — admin password/session authentication
 - `index.ts` — Hono app entry, CORS middleware, route mounting
 
@@ -72,7 +72,7 @@
 
 ### Cloudflare
 - AI Gateway: OpenRouter API key configured in Provider Keys (dashboard), not in Railway
-- Containers: Beta/waitlist only — API endpoint `/accounts/{id}/containers` returns 404
+- Moltworker: https://github.com/cloudflare/moltworker — used to run missionaries as autonomous agents
 - Missionary models: `openai/gpt-oss-120b`, `moonshotai/kimi-k2.5`, `x-ai/grok-4.1-fast`
 
 ## Gotchas
