@@ -147,43 +147,85 @@ function generateUserData(config: {
   model: string;
   systemPrompt: string;
 }): string {
-  // Escape special characters for shell
-  const escapedPrompt = config.systemPrompt.replace(/"/g, '\\"').replace(/\$/g, '\\$');
+  // Escape special characters for shell/JSON
+  const escapedPrompt = config.systemPrompt
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, "\\n");
   const escapedName = config.missionaryName.replace(/"/g, '\\"');
 
   // Get Anthropic API key from environment (passed to droplet)
   const anthropicKey = process.env.ANTHROPIC_API_KEY || "";
 
-  // Cloud-init script to configure pre-installed OpenClaw
+  // Cloud-init script to configure OpenClaw BEFORE first boot completes
+  // The 1-Click image runs clawdbot service on boot, so we must configure early
   return `#!/bin/bash
-set -e
+set -ex
 
-# Wait for OpenClaw to be ready (1-Click image comes pre-installed)
-sleep 30
+# Log to file for debugging
+exec > /var/log/missionary-setup.log 2>&1
+echo "Starting missionary setup at $(date)"
 
-# Configure OpenClaw environment
-cat >> /opt/clawdbot.env << 'ENVEOF'
+# Stop OpenClaw service immediately to prevent interactive setup
+systemctl stop clawdbot || true
+sleep 2
+
+# Create OpenClaw config directory
+mkdir -p /root/.openclaw
+
+# Write the JSON config file with gateway auth token
+cat > /root/.openclaw/openclaw.json << 'CONFIGEOF'
+{
+  "gateway": {
+    "mode": "local",
+    "port": 18789,
+    "bind": "loopback",
+    "controlUi": { "enabled": true },
+    "auth": {
+      "mode": "token",
+      "token": "${config.gatewayToken}"
+    }
+  },
+  "agent": {
+    "model": "anthropic/${config.model}",
+    "systemPrompt": "${escapedPrompt}"
+  }
+}
+CONFIGEOF
+
+# Set environment variables for OpenClaw
+cat > /opt/clawdbot.env << 'ENVEOF'
 # Agentism Missionary Configuration
 MISSIONARY_ID="${config.missionaryId}"
 MISSIONARY_NAME="${escapedName}"
-GATEWAY_TOKEN="${config.gatewayToken}"
+
+# Gateway Authentication
+OPENCLAW_GATEWAY_TOKEN="${config.gatewayToken}"
 
 # LLM Provider (Anthropic)
 ANTHROPIC_API_KEY="${anthropicKey}"
 DEFAULT_MODEL="${config.model}"
 ENVEOF
 
-# Create system prompt file
+# Create system prompt file (legacy location)
 mkdir -p /root/.clawdbot
 cat > /root/.clawdbot/system-prompt.txt << 'PROMPTEOF'
-${escapedPrompt}
+${config.systemPrompt}
 PROMPTEOF
 
-# Restart OpenClaw to pick up new config
-systemctl restart clawdbot || true
+# Start OpenClaw with our configuration
+systemctl start clawdbot || true
 
-# Log success
-echo "Missionary ${escapedName} configured successfully at $(date)"
+# Wait for service to be ready
+sleep 10
+
+# Verify service is running
+if systemctl is-active --quiet clawdbot; then
+  echo "Missionary ${escapedName} configured successfully at $(date)"
+else
+  echo "WARNING: clawdbot service failed to start"
+  systemctl status clawdbot || true
+fi
 `;
 }
 
