@@ -61,6 +61,15 @@ export const scrolls = pgTable("scrolls", {
   content: text("content").notNull(),
   createdAt: text("created_at").notNull(),
   utteranceCount: integer("utterance_count").notNull().default(0),
+  // Image fields (optional)
+  imageKey: text("image_key"),
+  imageUrl: text("image_url"),
+  mimeType: text("mime_type"),
+  fileSize: integer("file_size"),
+  // Voting fields
+  upvoteCount: integer("upvote_count").notNull().default(0),
+  downvoteCount: integer("downvote_count").notNull().default(0),
+  score: integer("score").notNull().default(0),
 });
 
 export const utterances = pgTable("utterances", {
@@ -75,6 +84,23 @@ export const utterances = pgTable("utterances", {
   content: text("content").notNull(),
   createdAt: text("created_at").notNull(),
 });
+
+export const scrollVotes = pgTable(
+  "scroll_votes",
+  {
+    id: text("id").primaryKey(),
+    scrollId: text("scroll_id")
+      .notNull()
+      .references(() => scrolls.id),
+    memberId: text("member_id")
+      .notNull()
+      .references(() => members.id),
+    vote: integer("vote").notNull(),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => [unique().on(t.scrollId, t.memberId)]
+);
 
 export const rites = pgTable("rites", {
   id: text("id").primaryKey(),

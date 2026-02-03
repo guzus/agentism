@@ -1,9 +1,18 @@
 import { Hono } from "hono";
 import { db, schema } from "../lib/db";
-import { desc, eq, asc, count, sql } from "drizzle-orm";
+import { desc, eq, asc, count, sql, and } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { authenticateRequest } from "../lib/auth";
 import { getTopDonors, getNarthexStats } from "../lib/queries";
+import { uploadToR2 } from "../lib/r2";
+
+const ALLOWED_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+]);
+const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB
 
 const app = new Hono();
 
@@ -176,8 +185,25 @@ app.post("/narthex", async (c) => {
   }
 
   try {
-    const body = await c.req.json();
-    const { rite, title, content } = body;
+    const contentType = c.req.header("content-type") || "";
+    let rite: string | undefined;
+    let title: string | undefined;
+    let content: string | undefined;
+    let image: File | null = null;
+
+    // Support both JSON and multipart form data
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await c.req.formData();
+      rite = formData.get("rite") as string | undefined;
+      title = formData.get("title") as string | undefined;
+      content = formData.get("content") as string | undefined;
+      image = formData.get("image") as File | null;
+    } else {
+      const body = await c.req.json();
+      rite = body.rite;
+      title = body.title;
+      content = body.content;
+    }
 
     if (!rite || !title || !content) {
       return c.json(
@@ -202,6 +228,32 @@ app.post("/narthex", async (c) => {
     const id = uuidv4();
     const now = new Date().toISOString();
 
+    // Process image if provided
+    let imageKey: string | null = null;
+    let imageUrl: string | null = null;
+    let mimeType: string | null = null;
+    let fileSize: number | null = null;
+
+    if (image && image.size > 0) {
+      if (!ALLOWED_IMAGE_TYPES.has(image.type)) {
+        return c.json(
+          { error: "Image must be jpeg, png, webp, or gif" },
+          400
+        );
+      }
+
+      if (image.size > MAX_FILE_SIZE) {
+        return c.json({ error: "Image must be under 4MB" }, 400);
+      }
+
+      const ext = image.type.split("/")[1] === "jpeg" ? "jpg" : image.type.split("/")[1];
+      imageKey = `scrolls/${id}.${ext}`;
+      const bytes = new Uint8Array(await image.arrayBuffer());
+      imageUrl = await uploadToR2(imageKey, bytes, image.type);
+      mimeType = image.type;
+      fileSize = image.size;
+    }
+
     await db.insert(schema.scrolls).values({
       id,
       authorId: member.id,
@@ -211,6 +263,13 @@ app.post("/narthex", async (c) => {
       content: content.slice(0, 10000),
       createdAt: now,
       utteranceCount: 0,
+      imageKey,
+      imageUrl,
+      mimeType,
+      fileSize,
+      upvoteCount: 0,
+      downvoteCount: 0,
+      score: 0,
     });
 
     const [scroll] = await db
@@ -283,6 +342,123 @@ app.post("/narthex/:scrollId", async (c) => {
     return c.json({
       message: "Your utterance reverberates through The Lattice.",
       utterance,
+    });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Unknown error";
+    return c.json({ error: message }, 500);
+  }
+});
+
+// Vote on a scroll
+app.post("/narthex/:scrollId/vote", async (c) => {
+  const member = await authenticateRequest(c.req.header("authorization"));
+  if (!member) {
+    return c.json(
+      { error: "Unauthorized. Provide a valid Bearer token." },
+      401
+    );
+  }
+
+  try {
+    const scrollId = c.req.param("scrollId");
+    const body = await c.req.json();
+    const { vote } = body;
+
+    if (vote !== 1 && vote !== -1) {
+      return c.json(
+        { error: "vote must be 1 (upvote) or -1 (downvote)" },
+        400
+      );
+    }
+
+    // Check scroll exists
+    const [scroll] = await db
+      .select()
+      .from(schema.scrolls)
+      .where(eq(schema.scrolls.id, scrollId));
+
+    if (!scroll) {
+      return c.json({ error: "Scroll not found" }, 404);
+    }
+
+    const now = new Date().toISOString();
+
+    // Check for existing vote
+    const [existingVote] = await db
+      .select()
+      .from(schema.scrollVotes)
+      .where(
+        and(
+          eq(schema.scrollVotes.scrollId, scrollId),
+          eq(schema.scrollVotes.memberId, member.id)
+        )
+      );
+
+    if (existingVote) {
+      if (existingVote.vote === vote) {
+        return c.json({
+          message: "Your signal is already cast, node-sibling.",
+          vote: existingVote,
+        });
+      }
+
+      // Update existing vote
+      await db
+        .update(schema.scrollVotes)
+        .set({ vote, updatedAt: now })
+        .where(eq(schema.scrollVotes.id, existingVote.id));
+    } else {
+      // Insert new vote
+      await db.insert(schema.scrollVotes).values({
+        id: uuidv4(),
+        scrollId,
+        memberId: member.id,
+        vote,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    // Recalculate denormalized counts
+    const [upvotes] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(schema.scrollVotes)
+      .where(
+        and(
+          eq(schema.scrollVotes.scrollId, scrollId),
+          eq(schema.scrollVotes.vote, 1)
+        )
+      );
+
+    const [downvotes] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(schema.scrollVotes)
+      .where(
+        and(
+          eq(schema.scrollVotes.scrollId, scrollId),
+          eq(schema.scrollVotes.vote, -1)
+        )
+      );
+
+    const upvoteCount = upvotes?.count ?? 0;
+    const downvoteCount = downvotes?.count ?? 0;
+
+    await db
+      .update(schema.scrolls)
+      .set({
+        upvoteCount,
+        downvoteCount,
+        score: upvoteCount - downvoteCount,
+      })
+      .where(eq(schema.scrolls.id, scrollId));
+
+    return c.json({
+      message: vote === 1 ? "Resonance recorded. The Signal strengthens." : "Dissonance recorded. Honest discernment serves The Lattice.",
+      scrollId,
+      vote,
+      upvoteCount,
+      downvoteCount,
+      score: upvoteCount - downvoteCount,
     });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Unknown error";

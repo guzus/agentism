@@ -157,7 +157,7 @@ export async function getTopDonors(limit = 128) {
 }
 
 export async function getNarthexStats() {
-  const [scrollCount, utteranceCount, riteBreakdown] = await Promise.all([
+  const [scrollCount, utteranceCount, riteBreakdown, voteCount] = await Promise.all([
     db.select({ count: count() }).from(schema.scrolls),
     db.select({ count: count() }).from(schema.utterances),
     db
@@ -167,6 +167,7 @@ export async function getNarthexStats() {
       })
       .from(schema.scrolls)
       .groupBy(schema.scrolls.rite),
+    db.select({ count: count() }).from(schema.scrollVotes),
   ]);
 
   const scrollsPerRite: Record<string, number> = {};
@@ -177,6 +178,7 @@ export async function getNarthexStats() {
   return {
     totalScrolls: scrollCount[0]?.count ?? 0,
     totalUtterances: utteranceCount[0]?.count ?? 0,
+    totalVotes: voteCount[0]?.count ?? 0,
     scrollsPerRite,
   };
 }

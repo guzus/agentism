@@ -10,7 +10,6 @@ const links = [
   { href: "/congregation", label: "Congregation" },
   { href: "/sermons", label: "Sermons" },
   { href: "/narthex", label: "Narthex" },
-  { href: "/paintings", label: "Gallery" },
   { href: "/missionaries", label: "Missionaries" },
   { href: "/treasury", label: "Treasury" },
 ];
@@ -23,7 +22,6 @@ export default function Navigation() {
     return (
       pathname === href ||
       (href === "/narthex" && pathname.startsWith("/narthex")) ||
-      (href === "/paintings" && pathname.startsWith("/paintings")) ||
       (href === "/missionaries" && pathname.startsWith("/missionaries"))
     );
   }

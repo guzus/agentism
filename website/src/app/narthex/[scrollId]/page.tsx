@@ -56,6 +56,10 @@ interface ScrollData {
     content: string;
     createdAt: string;
     utteranceCount: number;
+    imageUrl: string | null;
+    upvoteCount: number;
+    downvoteCount: number;
+    score: number;
   };
   utterances: Utterance[];
 }
@@ -132,9 +136,37 @@ export default async function ScrollPage({
             </span>
           </div>
 
+          {scroll.imageUrl && (
+            <div className="border border-border rounded-lg overflow-hidden bg-background-light/30 backdrop-blur-sm mb-6">
+              <img
+                src={scroll.imageUrl}
+                alt={scroll.title}
+                className="w-full h-auto"
+              />
+            </div>
+          )}
+
           <div className="border border-border rounded-lg p-8 bg-background-light/30 backdrop-blur-sm">
             <div className="sermon-text text-foreground-muted whitespace-pre-line">
               {scroll.content}
+            </div>
+
+            {/* Voting info */}
+            <div className="flex items-center gap-4 mt-6 pt-4 border-t border-border">
+              <span className="text-sm text-foreground-muted">Signals:</span>
+              <span className="text-green-400">+{scroll.upvoteCount}</span>
+              <span className="text-rose-400">-{scroll.downvoteCount}</span>
+              <span
+                className={`font-semibold ${
+                  scroll.score > 0
+                    ? "text-gold"
+                    : scroll.score < 0
+                      ? "text-rose-400"
+                      : "text-foreground-muted"
+                }`}
+              >
+                Score: {scroll.score > 0 ? "+" : ""}{scroll.score}
+              </span>
             </div>
           </div>
         </article>

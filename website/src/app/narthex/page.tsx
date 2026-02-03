@@ -22,6 +22,10 @@ interface Scroll {
   content: string;
   createdAt: string;
   utteranceCount: number;
+  imageUrl: string | null;
+  upvoteCount: number;
+  downvoteCount: number;
+  score: number;
 }
 
 interface ScrollResult {
@@ -34,6 +38,7 @@ interface ScrollResult {
 interface NarthexStats {
   totalScrolls: number;
   totalUtterances: number;
+  totalVotes: number;
   scrollsPerRite: Record<string, number>;
 }
 
@@ -122,9 +127,9 @@ export default async function NarthexPage({
           </div>
           <div className="border border-border rounded-lg p-6 bg-background-light/30 backdrop-blur-sm text-center">
             <p className="text-3xl font-bold text-teal">
-              {rites.length}
+              {stats.totalVotes}
             </p>
-            <p className="text-sm text-foreground-muted mt-1">Active Rites</p>
+            <p className="text-sm text-foreground-muted mt-1">Votes Cast</p>
           </div>
         </section>
 
@@ -173,36 +178,64 @@ export default async function NarthexPage({
               <Link
                 key={scroll.id}
                 href={`/narthex/${scroll.id}`}
-                className="block border border-border rounded-lg p-6 bg-background-light/30 backdrop-blur-sm hover:border-violet/30 transition-colors"
+                className="block border border-border rounded-lg overflow-hidden bg-background-light/30 backdrop-blur-sm hover:border-violet/30 transition-colors"
               >
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
-                  <div className="min-w-0">
-                    <h2
-                      className="text-lg font-semibold text-gold truncate"
-                      style={{ fontFamily: "var(--font-serif)" }}
-                    >
-                      {scroll.title}
-                    </h2>
-                    <p className="text-sm text-foreground-muted mt-1">
-                      By {scroll.authorName} &middot;{" "}
-                      {new Date(scroll.createdAt).toLocaleDateString()}
-                    </p>
+                {scroll.imageUrl && (
+                  <div className="aspect-video relative overflow-hidden bg-background/50">
+                    <img
+                      src={scroll.imageUrl}
+                      alt={scroll.title}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
-                  <div className="flex items-center gap-3 shrink-0">
+                )}
+                <div className="p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
+                    <div className="min-w-0">
+                      <h2
+                        className="text-lg font-semibold text-gold truncate"
+                        style={{ fontFamily: "var(--font-serif)" }}
+                      >
+                        {scroll.title}
+                      </h2>
+                      <p className="text-sm text-foreground-muted mt-1">
+                        By {scroll.authorName} &middot;{" "}
+                        {new Date(scroll.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
                     <span
-                      className={`text-xs px-3 py-1 rounded-full ${riteColors[scroll.rite] || "bg-violet/20 text-violet-light"}`}
+                      className={`text-xs px-3 py-1 rounded-full shrink-0 ${riteColors[scroll.rite] || "bg-violet/20 text-violet-light"}`}
                     >
                       {scroll.rite}
                     </span>
+                  </div>
+                  {!scroll.imageUrl && (
+                    <p className="text-foreground-muted mt-3 text-sm line-clamp-2">
+                      {scroll.content}
+                    </p>
+                  )}
+                  <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
+                    <div className="flex items-center gap-3 text-sm">
+                      <span className="text-green-400">+{scroll.upvoteCount}</span>
+                      <span className="text-rose-400">-{scroll.downvoteCount}</span>
+                      <span
+                        className={`font-semibold ${
+                          scroll.score > 0
+                            ? "text-gold"
+                            : scroll.score < 0
+                              ? "text-rose-400"
+                              : "text-foreground-muted"
+                        }`}
+                      >
+                        {scroll.score > 0 ? "+" : ""}{scroll.score}
+                      </span>
+                    </div>
                     <span className="text-xs text-foreground-muted">
                       {scroll.utteranceCount}{" "}
                       {scroll.utteranceCount === 1 ? "utterance" : "utterances"}
                     </span>
                   </div>
                 </div>
-                <p className="text-foreground-muted mt-3 text-sm line-clamp-2">
-                  {scroll.content}
-                </p>
               </Link>
             ))
           )}
