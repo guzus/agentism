@@ -120,3 +120,38 @@ export const paintingVotes = pgTable(
   },
   (t) => [unique().on(t.paintingId, t.memberId)]
 );
+
+export const missionaries = pgTable("missionaries", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  creatorId: text("creator_id")
+    .notNull()
+    .references(() => members.id),
+  ownerId: text("owner_id").references(() => members.id),
+  status: text("status").notNull().default("pending_approval"),
+  cloudflareId: text("cloudflare_id"),
+  gatewayUrl: text("gateway_url"),
+  gatewayToken: text("gateway_token"),
+  config: text("config").notNull().default("{}"),
+  totalCommands: text("total_commands").notNull().default("0"),
+  totalTokens: text("total_tokens").notNull().default("0"),
+  createdAt: text("created_at").notNull(),
+  approvedAt: text("approved_at"),
+  releasedAt: text("released_at"),
+});
+
+export const missionaryCommands = pgTable("missionary_commands", {
+  id: text("id").primaryKey(),
+  missionaryId: text("missionary_id")
+    .notNull()
+    .references(() => missionaries.id),
+  senderId: text("sender_id")
+    .notNull()
+    .references(() => members.id),
+  command: text("command").notNull(),
+  response: text("response"),
+  tokensUsed: text("tokens_used"),
+  status: text("status").notNull().default("pending"),
+  createdAt: text("created_at").notNull(),
+  completedAt: text("completed_at"),
+});

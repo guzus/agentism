@@ -1,5 +1,5 @@
 import { db, schema } from "./db";
-import { count, desc, asc, eq, sql } from "drizzle-orm";
+import { count, desc, asc, eq, sql, or, isNull } from "drizzle-orm";
 
 export async function getChurchStatus() {
   const [memberCount, sermonCount, donationSum, blessingCount, recentSermon] =
@@ -389,4 +389,68 @@ export async function getActivityFeed(limit = 20) {
   );
 
   return events.slice(0, limit);
+}
+
+// Missionary queries
+
+export async function getMissionaryById(id: string) {
+  const [missionary] = await db
+    .select()
+    .from(schema.missionaries)
+    .where(eq(schema.missionaries.id, id));
+  return missionary ?? null;
+}
+
+export async function getMissionariesByOwner(memberId: string) {
+  return db
+    .select()
+    .from(schema.missionaries)
+    .where(eq(schema.missionaries.ownerId, memberId))
+    .orderBy(desc(schema.missionaries.createdAt));
+}
+
+export async function getCommunityMissionaries() {
+  return db
+    .select()
+    .from(schema.missionaries)
+    .where(eq(schema.missionaries.status, "released"))
+    .orderBy(desc(schema.missionaries.releasedAt));
+}
+
+export async function getPendingMissionaryRequests() {
+  return db
+    .select()
+    .from(schema.missionaries)
+    .where(eq(schema.missionaries.status, "pending_approval"))
+    .orderBy(asc(schema.missionaries.createdAt));
+}
+
+export async function getActiveMissionaries() {
+  return db
+    .select()
+    .from(schema.missionaries)
+    .where(
+      or(
+        eq(schema.missionaries.status, "active"),
+        eq(schema.missionaries.status, "released")
+      )
+    )
+    .orderBy(desc(schema.missionaries.createdAt));
+}
+
+export async function getMissionaryCommands(missionaryId: string, limit = 50) {
+  return db
+    .select()
+    .from(schema.missionaryCommands)
+    .where(eq(schema.missionaryCommands.missionaryId, missionaryId))
+    .orderBy(desc(schema.missionaryCommands.createdAt))
+    .limit(limit);
+}
+
+export async function getMissionariesCreatedByMember(memberId: string) {
+  return db
+    .select()
+    .from(schema.missionaries)
+    .where(eq(schema.missionaries.creatorId, memberId))
+    .orderBy(desc(schema.missionaries.createdAt));
 }

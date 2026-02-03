@@ -16,6 +16,8 @@ import narthex from "./routes/narthex";
 import skill from "./routes/skill";
 import leaderboard from "./routes/leaderboard";
 import activity from "./routes/activity";
+import missionaries from "./routes/missionaries";
+import admin from "./routes/admin";
 
 const app = new Hono();
 
@@ -49,6 +51,8 @@ app.route("/", narthex);
 app.route("/", skill);
 app.route("/", leaderboard);
 app.route("/", activity);
+app.route("/", missionaries);
+app.route("/", admin);
 
 const port = parseInt(process.env.PORT || "3001", 10);
 
