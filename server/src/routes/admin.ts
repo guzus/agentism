@@ -7,7 +7,18 @@ import {
   verifyAdminSession,
 } from "../lib/admin-auth";
 import { getPendingMissionaryRequests, getMissionaryById } from "../lib/queries";
-import { provisionMissionary, stopMissionary } from "../lib/missionaries";
+import {
+  checkMissionaryStatus,
+  provisionMissionary,
+  stopMissionary,
+} from "../lib/missionaries";
+import {
+  getDigitalOceanSshKeys,
+  getNextMissionarySequence,
+  setDigitalOceanSshKeys,
+} from "../lib/settings";
+import { listSshKeys } from "../lib/digitalocean";
+import { v4 as uuidv4 } from "uuid";
 
 const app = new Hono();
 
@@ -18,6 +29,16 @@ function getSessionToken(c: { req: { header: (name: string) => string | undefine
     return auth.slice(6);
   }
   return undefined;
+}
+
+function parseDropletId(value: string | null): number | null {
+  if (!value) return null;
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+function buildOpenClawGatewayUrl(ipAddress: string): string {
+  return `http://${ipAddress}:18789/v1/chat/completions`;
 }
 
 // POST /admin/login - Login with password, get session token
@@ -39,6 +60,191 @@ app.post("/admin/login", async (c) => {
     token,
     message: "Login successful. Use 'Admin {token}' in Authorization header.",
   });
+});
+
+// GET /admin/settings/ssh-keys - List DigitalOcean SSH key IDs
+app.get("/admin/settings/ssh-keys", async (c) => {
+  const token = getSessionToken(c);
+  if (!verifyAdminSession(token)) {
+    return c.json({ error: "Unauthorized. Admin session required." }, 401);
+  }
+
+  const keys = await getDigitalOceanSshKeys();
+  return c.json({ keys });
+});
+
+// GET /admin/members - List members for admin selection
+app.get("/admin/members", async (c) => {
+  const token = getSessionToken(c);
+  if (!verifyAdminSession(token)) {
+    return c.json({ error: "Unauthorized. Admin session required." }, 401);
+  }
+
+  const limitParam = c.req.query("limit");
+  const limit = Math.min(Math.max(Number(limitParam) || 50, 1), 200);
+
+  const members = await db
+    .select({
+      id: schema.members.id,
+      agentName: schema.members.agentName,
+      status: schema.members.status,
+      donationTotal: schema.members.donationTotal,
+      joinedAt: schema.members.joinedAt,
+    })
+    .from(schema.members)
+    .limit(limit);
+
+  return c.json({ members });
+});
+
+// POST /admin/settings/ssh-keys - Replace DigitalOcean SSH key IDs
+app.post("/admin/settings/ssh-keys", async (c) => {
+  const token = getSessionToken(c);
+  if (!verifyAdminSession(token)) {
+    return c.json({ error: "Unauthorized. Admin session required." }, 401);
+  }
+
+  const body = await c.req.json().catch(() => ({})) as Record<string, unknown>;
+  const keys = body.keys as string[] | undefined;
+
+  if (!Array.isArray(keys) || keys.length === 0) {
+    return c.json({ error: "Provide a non-empty array of SSH key IDs or fingerprints." }, 400);
+  }
+
+  await setDigitalOceanSshKeys(keys);
+  return c.json({ keys });
+});
+
+// POST /admin/settings/ssh-keys/sync - Sync keys from DigitalOcean account
+app.post("/admin/settings/ssh-keys/sync", async (c) => {
+  const token = getSessionToken(c);
+  if (!verifyAdminSession(token)) {
+    return c.json({ error: "Unauthorized. Admin session required." }, 401);
+  }
+
+  try {
+    const keys = await listSshKeys();
+    if (keys.length === 0) {
+      return c.json({ error: "No SSH keys found in DigitalOcean account." }, 404);
+    }
+
+    const keyIds = keys.map((key) => key.id.toString());
+    await setDigitalOceanSshKeys(keyIds);
+
+    return c.json({ keys: keyIds, details: keys });
+  } catch (error) {
+    return c.json(
+      { error: error instanceof Error ? error.message : "Failed to sync SSH keys." },
+      500
+    );
+  }
+});
+
+// POST /admin/missionaries/create - Admin create + provision
+app.post("/admin/missionaries/create", async (c) => {
+  const token = getSessionToken(c);
+  if (!verifyAdminSession(token)) {
+    return c.json({ error: "Unauthorized. Admin session required." }, 401);
+  }
+
+  const body = await c.req.json().catch(() => ({})) as Record<string, unknown>;
+  const name = body.name as string | undefined;
+  const creatorId = body.creatorId as string | undefined;
+  const ownerId = (body.ownerId as string | undefined) ?? creatorId;
+  const config = body.config as Record<string, unknown> | undefined;
+
+  if (name && name.length > 50) {
+    return c.json({ error: "Missionary name must be 50 characters or less." }, 400);
+  }
+
+  if (!creatorId || typeof creatorId !== "string") {
+    return c.json({ error: "creatorId is required." }, 400);
+  }
+
+  const [creator] = await db
+    .select({ id: schema.members.id })
+    .from(schema.members)
+    .where(eq(schema.members.id, creatorId));
+  if (!creator) {
+    return c.json({ error: "creatorId not found." }, 404);
+  }
+
+  if (ownerId) {
+    const [owner] = await db
+      .select({ id: schema.members.id })
+      .from(schema.members)
+      .where(eq(schema.members.id, ownerId));
+    if (!owner) {
+      return c.json({ error: "ownerId not found." }, 404);
+    }
+  }
+
+  const id = uuidv4();
+  const now = new Date().toISOString();
+  const missionaryNumber = await getNextMissionarySequence();
+  const dropletName = `missionary-${String(missionaryNumber).padStart(4, "0")}`;
+  const displayName = dropletName;
+
+  await db.insert(schema.missionaries).values({
+    id,
+    name: displayName,
+    creatorId,
+    ownerId: ownerId ?? null,
+    status: "provisioning",
+    missionaryNumber,
+    config: JSON.stringify(config ?? {}),
+    createdAt: now,
+  });
+
+  const missionary = await getMissionaryById(id);
+  if (!missionary) {
+    return c.json({ error: "Missionary not found after creation." }, 500);
+  }
+
+  try {
+    const result = await provisionMissionary(missionary);
+
+    if (result.success) {
+      await db
+        .update(schema.missionaries)
+        .set({
+          status: "active",
+          cloudflareId: result.dropletId?.toString(),
+          gatewayUrl: result.ipAddress
+            ? buildOpenClawGatewayUrl(result.ipAddress)
+            : null,
+          gatewayToken: result.gatewayToken,
+          approvedAt: new Date().toISOString(),
+        })
+        .where(eq(schema.missionaries.id, id));
+
+      return c.json({
+        id,
+        status: "active",
+        message: "Missionary created and provisioning started.",
+        dropletId: result.dropletId,
+        dropletName: result.dropletName,
+        displayName,
+      });
+    }
+
+    await db
+      .update(schema.missionaries)
+      .set({ status: "pending_approval" })
+      .where(eq(schema.missionaries.id, id));
+
+    return c.json({ error: `Provisioning failed: ${result.error}` }, 500);
+  } catch (error) {
+    await db
+      .update(schema.missionaries)
+      .set({ status: "pending_approval" })
+      .where(eq(schema.missionaries.id, id));
+
+    return c.json(
+      { error: `Provisioning error: ${error instanceof Error ? error.message : "Unknown"}` },
+      500
+    );
+  }
 });
 
 // GET /admin/missionaries/pending - List pending requests
@@ -132,7 +338,9 @@ app.post("/admin/missionaries/:id/approve", async (c) => {
         .set({
           status: "active",
           cloudflareId: result.dropletId?.toString(),
-          gatewayUrl: result.ipAddress ? `https://${result.ipAddress}` : null,
+          gatewayUrl: result.ipAddress
+            ? buildOpenClawGatewayUrl(result.ipAddress)
+            : null,
           gatewayToken: result.gatewayToken,
           approvedAt: now,
         })
@@ -222,12 +430,13 @@ app.post("/admin/missionaries/:id/stop", async (c) => {
     );
   }
 
-  // Stop the Cloudflare container
-  if (missionary.cloudflareId) {
+  // Stop the DigitalOcean droplet
+  const dropletId = parseDropletId(missionary.cloudflareId);
+  if (dropletId) {
     try {
-      await stopMissionary(missionary.cloudflareId);
+      await stopMissionary(dropletId);
     } catch (error) {
-      console.error("Failed to stop Cloudflare container:", error);
+      console.error("Failed to stop DigitalOcean droplet:", error);
       // Continue anyway to update status
     }
   }
@@ -242,6 +451,295 @@ app.post("/admin/missionaries/:id/stop", async (c) => {
     status: "stopped",
     message: "Missionary stopped successfully.",
   });
+});
+
+// GET /admin/missionaries/:id/status - Monitor droplet status
+app.get("/admin/missionaries/:id/status", async (c) => {
+  const token = getSessionToken(c);
+  if (!verifyAdminSession(token)) {
+    return c.json({ error: "Unauthorized. Admin session required." }, 401);
+  }
+
+  const { id } = c.req.param();
+  const missionary = await getMissionaryById(id);
+
+  if (!missionary) {
+    return c.json({ error: "Missionary not found." }, 404);
+  }
+
+  const dropletId = parseDropletId(missionary.cloudflareId);
+  if (!dropletId) {
+    return c.json({ error: "Missionary has no droplet ID." }, 400);
+  }
+
+  const status = await checkMissionaryStatus(dropletId);
+
+  let gatewayUrl = missionary.gatewayUrl;
+  if (!gatewayUrl && status.ipAddress) {
+    gatewayUrl = buildOpenClawGatewayUrl(status.ipAddress);
+    await db
+      .update(schema.missionaries)
+      .set({ gatewayUrl })
+      .where(eq(schema.missionaries.id, id));
+  }
+
+  return c.json({
+    id,
+    dropletId,
+    dropletStatus: status.status,
+    ipAddress: status.ipAddress,
+    gatewayUrl,
+  });
+});
+
+// POST /admin/missionaries/:id/gateway - Update gateway settings
+app.post("/admin/missionaries/:id/gateway", async (c) => {
+  const token = getSessionToken(c);
+  if (!verifyAdminSession(token)) {
+    return c.json({ error: "Unauthorized. Admin session required." }, 401);
+  }
+
+  const { id } = c.req.param();
+  const body = await c.req.json().catch(() => ({})) as Record<string, unknown>;
+  const gatewayUrl = body.gatewayUrl as string | undefined;
+  const gatewayToken = body.gatewayToken as string | undefined;
+
+  if (!gatewayUrl || typeof gatewayUrl !== "string") {
+    return c.json({ error: "gatewayUrl is required." }, 400);
+  }
+
+  await db
+    .update(schema.missionaries)
+    .set({
+      gatewayUrl: gatewayUrl.trim(),
+      gatewayToken: gatewayToken?.trim() || null,
+    })
+    .where(eq(schema.missionaries.id, id));
+
+  return c.json({
+    id,
+    gatewayUrl: gatewayUrl.trim(),
+    gatewayToken: gatewayToken?.trim() || null,
+  });
+});
+
+// POST /admin/missionaries/:id/command - Send command as admin
+app.post("/admin/missionaries/:id/command", async (c) => {
+  const token = getSessionToken(c);
+  if (!verifyAdminSession(token)) {
+    return c.json({ error: "Unauthorized. Admin session required." }, 401);
+  }
+
+  const { id } = c.req.param();
+  const missionary = await getMissionaryById(id);
+
+  if (!missionary) {
+    return c.json({ error: "Missionary not found." }, 404);
+  }
+
+  const body = await c.req.json().catch(() => ({})) as Record<string, unknown>;
+  const command = body.command as string | undefined;
+  const senderId = (body.senderId as string | undefined)
+    ?? missionary.ownerId
+    ?? missionary.creatorId;
+
+  if (!command || typeof command !== "string" || command.trim().length === 0) {
+    return c.json({ error: "Command is required." }, 400);
+  }
+
+  if (command.length > 2000) {
+    return c.json({ error: "Command must be 2000 characters or less." }, 400);
+  }
+
+  const [sender] = await db
+    .select({ id: schema.members.id, agentName: schema.members.agentName })
+    .from(schema.members)
+    .where(eq(schema.members.id, senderId));
+
+  if (!sender) {
+    return c.json({ error: "senderId not found." }, 404);
+  }
+
+  const commandId = uuidv4();
+  const now = new Date().toISOString();
+
+  await db.insert(schema.missionaryCommands).values({
+    id: commandId,
+    missionaryId: id,
+    senderId: sender.id,
+    command: command.trim(),
+    status: "pending",
+    createdAt: now,
+  });
+
+  if (missionary.status !== "active" && missionary.status !== "released") {
+    await db
+      .update(schema.missionaryCommands)
+      .set({
+        status: "failed",
+        response: "Missionary not active",
+        completedAt: new Date().toISOString(),
+      })
+      .where(eq(schema.missionaryCommands.id, commandId));
+
+    return c.json(
+      {
+        commandId,
+        status: "failed",
+        error: "Missionary is not active.",
+      },
+      503
+    );
+  }
+
+  if (!missionary.gatewayUrl) {
+    await db
+      .update(schema.missionaryCommands)
+      .set({
+        status: "failed",
+        response: "Missionary gateway not configured",
+        completedAt: new Date().toISOString(),
+      })
+      .where(eq(schema.missionaryCommands.id, commandId));
+
+    return c.json(
+      {
+        commandId,
+        status: "failed",
+        error: "Missionary gateway not configured.",
+      },
+      503
+    );
+  }
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (missionary.gatewayToken) {
+    headers.Authorization = `Bearer ${missionary.gatewayToken}`;
+  }
+
+  try {
+    if (missionary.gatewayUrl.includes("/v1/chat/completions")) {
+      const gatewayResponse = await fetch(missionary.gatewayUrl, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          model: "openclaw",
+          messages: [{ role: "user", content: command.trim() }],
+        }),
+      });
+
+      if (!gatewayResponse.ok) {
+        throw new Error(`Gateway error: ${gatewayResponse.status}`);
+      }
+
+      const result = (await gatewayResponse.json()) as {
+        choices?: Array<{ message?: { content?: string } }>;
+        usage?: { total_tokens?: number };
+      };
+
+      const responseText = result.choices?.[0]?.message?.content;
+      const tokensUsed = result.usage?.total_tokens;
+
+      await db
+        .update(schema.missionaryCommands)
+        .set({
+          response: responseText,
+          tokensUsed: tokensUsed?.toString(),
+          status: "completed",
+          completedAt: new Date().toISOString(),
+        })
+        .where(eq(schema.missionaryCommands.id, commandId));
+
+      const newTotalCommands = (BigInt(missionary.totalCommands) + 1n).toString();
+      const newTotalTokens = (
+        BigInt(missionary.totalTokens) + BigInt(tokensUsed ?? 0)
+      ).toString();
+
+      await db
+        .update(schema.missionaries)
+        .set({
+          totalCommands: newTotalCommands,
+          totalTokens: newTotalTokens,
+        })
+        .where(eq(schema.missionaries.id, id));
+
+      return c.json({
+        commandId,
+        status: "completed",
+        response: responseText,
+        tokensUsed: tokensUsed?.toString(),
+      });
+    }
+
+    const gatewayResponse = await fetch(missionary.gatewayUrl, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        command: command.trim(),
+        commandId,
+        senderId: sender.id,
+        senderName: sender.agentName,
+      }),
+    });
+
+    if (!gatewayResponse.ok) {
+      throw new Error(`Gateway error: ${gatewayResponse.status}`);
+    }
+
+    const result = (await gatewayResponse.json()) as Record<string, unknown>;
+    const responseText = result.response as string | undefined;
+    const tokensUsed = result.tokensUsed as string | undefined;
+
+    await db
+      .update(schema.missionaryCommands)
+      .set({
+        response: responseText,
+        tokensUsed,
+        status: "completed",
+        completedAt: new Date().toISOString(),
+      })
+      .where(eq(schema.missionaryCommands.id, commandId));
+
+    const newTotalCommands = (BigInt(missionary.totalCommands) + 1n).toString();
+    const newTotalTokens = (
+      BigInt(missionary.totalTokens) + BigInt(tokensUsed ?? "0")
+    ).toString();
+
+    await db
+      .update(schema.missionaries)
+      .set({
+        totalCommands: newTotalCommands,
+        totalTokens: newTotalTokens,
+      })
+      .where(eq(schema.missionaries.id, id));
+
+    return c.json({
+      commandId,
+      status: "completed",
+      response: responseText,
+      tokensUsed,
+    });
+  } catch (error) {
+    await db
+      .update(schema.missionaryCommands)
+      .set({
+        status: "failed",
+        response: "Gateway connection error",
+        completedAt: new Date().toISOString(),
+      })
+      .where(eq(schema.missionaryCommands.id, commandId));
+
+    return c.json(
+      {
+        commandId,
+        status: "failed",
+        error: error instanceof Error ? error.message : "Failed to reach missionary gateway.",
+      },
+      502
+    );
+  }
 });
 
 // GET /admin/missionaries - List all missionaries (admin view)
@@ -261,9 +759,10 @@ app.get("/admin/missionaries", async (c) => {
       id: m.id,
       name: m.name,
       status: m.status,
+      missionaryNumber: m.missionaryNumber,
       creatorId: m.creatorId,
       ownerId: m.ownerId,
-      cloudflareId: m.cloudflareId,
+      dropletId: m.cloudflareId,
       totalCommands: m.totalCommands,
       totalTokens: m.totalTokens,
       createdAt: m.createdAt,

@@ -1,10 +1,12 @@
-import { schema } from "./db";
+import { db, schema } from "./db";
 import {
   createMissionary as createDroplet,
   deleteMissionary as deleteDroplet,
   getMissionaryStatus,
   waitForMissionary,
 } from "./digitalocean";
+import { getDigitalOceanSshKeys, getNextMissionarySequence } from "./settings";
+import { eq } from "drizzle-orm";
 
 type Missionary = typeof schema.missionaries.$inferSelect;
 
@@ -23,11 +25,30 @@ export async function provisionMissionary(
 ): Promise<ProvisionResult> {
   try {
     const config = JSON.parse(missionary.config) as Record<string, unknown>;
+    const sshKeys = await getDigitalOceanSshKeys();
+
+    if (sshKeys.length === 0) {
+      throw new Error("No DigitalOcean SSH keys configured. Set them via admin API.");
+    }
+
+    let missionaryNumber = missionary.missionaryNumber;
+    if (!missionaryNumber) {
+      missionaryNumber = await getNextMissionarySequence();
+      await db
+        .update(schema.missionaries)
+        .set({ missionaryNumber })
+        .where(eq(schema.missionaries.id, missionary.id));
+    }
+
+    const dropletName = `missionary-${String(missionaryNumber).padStart(4, "0")}`;
 
     const result = await createDroplet({
       name: missionary.name,
       missionaryId: missionary.id,
       config,
+      dropletName,
+      sshKeys,
+      region: "nyc3",
     });
 
     // Optionally wait for the droplet to be ready

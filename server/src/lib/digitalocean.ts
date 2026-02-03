@@ -19,6 +19,9 @@ interface CreateMissionaryParams {
   name: string;
   missionaryId: string;
   config: Record<string, unknown>;
+  dropletName: string;
+  sshKeys: string[];
+  region?: string;
 }
 
 interface CreateMissionaryResult {
@@ -56,6 +59,14 @@ interface DropletsListResponse {
   }>;
 }
 
+interface SshKeysResponse {
+  ssh_keys: Array<{
+    id: number;
+    fingerprint: string;
+    name: string;
+  }>;
+}
+
 // Create a DigitalOcean Droplet for a missionary
 export async function createMissionary(
   params: CreateMissionaryParams
@@ -63,7 +74,7 @@ export async function createMissionary(
   const { apiToken } = getConfig();
 
   // Droplet name (sanitized)
-  const dropletName = `missionary-${params.missionaryId.slice(0, 8).toLowerCase()}`;
+  const dropletName = params.dropletName;
 
   // Generate gateway token for this missionary
   const gatewayToken = crypto.randomUUID();
@@ -86,10 +97,11 @@ export async function createMissionary(
     },
     body: JSON.stringify({
       name: dropletName,
-      region: "sfo3", // San Francisco
+      region: params.region ?? "nyc3", // New York
       size: "s-2vcpu-4gb", // $24/month - good for personal use
       image: "openclaw", // DigitalOcean's pre-built OpenClaw image
       user_data: userData,
+      ssh_keys: params.sshKeys,
       tags: ["missionary", `missionary-${params.missionaryId}`],
     }),
   });
@@ -229,6 +241,29 @@ export async function listMissionaries(): Promise<
     name: d.name,
     status: d.status,
     ipAddress: d.networks.v4.find((n) => n.type === "public")?.ip_address ?? null,
+  }));
+}
+
+export async function listSshKeys(): Promise<
+  Array<{ id: number; fingerprint: string; name: string }>
+> {
+  const { apiToken } = getConfig();
+
+  const response = await fetch("https://api.digitalocean.com/v2/account/keys", {
+    headers: {
+      Authorization: `Bearer ${apiToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to list SSH keys: ${response.status}`);
+  }
+
+  const data = (await response.json()) as SshKeysResponse;
+  return data.ssh_keys.map((key) => ({
+    id: key.id,
+    fingerprint: key.fingerprint,
+    name: key.name,
   }));
 }
 

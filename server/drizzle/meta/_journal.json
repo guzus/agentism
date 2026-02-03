@@ -8,6 +8,13 @@
       "when": 1770112699517,
       "tag": "0000_familiar_mister_fear",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1770135533738,
+      "tag": "0001_youthful_dreadnoughts",
+      "breakpoints": true
     }
   ]
 }

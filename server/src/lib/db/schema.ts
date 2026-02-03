@@ -155,6 +155,7 @@ export const missionaries = pgTable("missionaries", {
     .references(() => members.id),
   ownerId: text("owner_id").references(() => members.id),
   status: text("status").notNull().default("pending_approval"),
+  missionaryNumber: integer("missionary_number"),
   cloudflareId: text("cloudflare_id"),
   gatewayUrl: text("gateway_url"),
   gatewayToken: text("gateway_token"),
@@ -164,6 +165,12 @@ export const missionaries = pgTable("missionaries", {
   createdAt: text("created_at").notNull(),
   approvedAt: text("approved_at"),
   releasedAt: text("released_at"),
+});
+
+export const systemSettings = pgTable("system_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: text("updated_at").notNull(),
 });
 
 export const missionaryCommands = pgTable("missionary_commands", {
