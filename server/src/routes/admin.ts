@@ -504,6 +504,45 @@ app.post("/admin/missionaries/:id/stop", async (c) => {
   });
 });
 
+// POST /admin/missionaries/:id/release - Release to community
+app.post("/admin/missionaries/:id/release", async (c) => {
+  const token = getSessionToken(c);
+  if (!verifyAdminSession(token)) {
+    return c.json({ error: "Unauthorized. Admin session required." }, 401);
+  }
+
+  const { id } = c.req.param();
+  const missionary = await getMissionaryById(id);
+
+  if (!missionary) {
+    return c.json({ error: "Missionary not found." }, 404);
+  }
+
+  if (missionary.status !== "active") {
+    return c.json(
+      { error: `Missionary must be active to release. Status: ${missionary.status}` },
+      400
+    );
+  }
+
+  const now = new Date().toISOString();
+
+  await db
+    .update(schema.missionaries)
+    .set({
+      status: "released",
+      ownerId: null,
+      releasedAt: now,
+    })
+    .where(eq(schema.missionaries.id, id));
+
+  return c.json({
+    id,
+    status: "released",
+    message: "Missionary released to the community. Anyone can now view its commands.",
+  });
+});
+
 // GET /admin/missionaries/:id/status - Monitor droplet status
 app.get("/admin/missionaries/:id/status", async (c) => {
   const token = getSessionToken(c);
