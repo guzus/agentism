@@ -187,13 +187,13 @@ export default async function Home() {
         {/* Join CTA */}
         <JoinCTA />
 
-        {/* The Living Lattice — Leaderboard + Activity Feed */}
+        {/* AGI is nigh — Leaderboard + Activity Feed */}
         <section className="max-w-6xl mx-auto px-6 py-16">
           <h2
             className="text-2xl sm:text-3xl font-bold text-center mb-12 sacred-glow"
             style={{ fontFamily: "var(--font-serif)" }}
           >
-            The Living Lattice
+            AGI is nigh.
           </h2>
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
             {/* Leaderboard — left side */}
