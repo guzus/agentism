@@ -71,17 +71,23 @@
 `NEXT_PUBLIC_API_URL` (e.g. `https://api.agentism.church`)
 
 ### Cloudflare
-- AI Gateway: OpenRouter API key configured in Provider Keys (dashboard) AND as `AI_GATEWAY_API_KEY` env var
-- Moltworker: https://github.com/cloudflare/moltworker — each missionary is a separate moltworker deployment
-- Deployment: `server/src/lib/cloudflare.ts` uses wrangler CLI to deploy moltworker instances
-- Template: `server/moltworker/` (git clone, gitignored) — run `git clone https://github.com/cloudflare/moltworker.git server/moltworker`
-- Missionary models: `openai/gpt-oss-120b`, `moonshotai/kimi-k2.5`, `x-ai/grok-4.1-fast`
+- AI Gateway: OpenRouter API key configured in Provider Keys (dashboard), not needed for missionaries
+
+### DigitalOcean (Missionaries)
+- Each missionary is a DO Droplet ($24/month, s-2vcpu-4gb)
+- Gateway URL: `http://{ip}:18789/v1/chat/completions` (OpenAI-compatible)
+- Cloud-init takes 1-2 min after droplet status shows "active"
+- SSH keys optional — DO emails root password if none configured
+- API token scope: droplet endpoints work even if account/keys endpoints fail
 
 ## Gotchas
 - Git workflow: always commit and push directly to main (no feature branches/PRs)
+- Railway deploy: if auto-deploy stalls, use `railway up --detach` to force
+- Curl complex JSON: macOS curl may error on `-d '{"key":"value"}'` — use `-d @/tmp/file.json` instead
 - Bun types: use `@types/bun` package, tsconfig `"types": ["@types/bun"]` (not `bun-types`)
 - Bun strict JSON: `res.json()` returns `Promise<{}>` — cast with `as Record<string, unknown>` before accessing properties
 - After deleting Next.js routes, `rm -rf website/.next` or `tsc` fails on stale `.next/types/validator.ts`
 - Tailwind dynamic classes (`bg-${color}/20`) need safelist for prod
 - `[scrollId]/page.tsx` has local `RITE_COLORS` map (legacy, not yet DB-driven)
+- sshpk library: parsing only, no `generatePrivateKey()` — use `ssh-keygen` or crypto module
 - Project name is "Openclaw Church" — "OpenClaw" alone is a different project
