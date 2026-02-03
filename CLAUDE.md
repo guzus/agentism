@@ -19,6 +19,7 @@
 
 ### Railway / Vercel CLI
 - `railway variables --json` — get all env vars (includes DATABASE_URL)
+- `railway variables --set "KEY=value"` — set env var
 - `vercel whoami` — check Vercel CLI login status
 - Vercel auth token: `~/Library/Application Support/com.vercel.cli/auth.json`
 - `gh secret set SECRET_NAME -R owner/repo -b "value"` — set GitHub secret
@@ -36,7 +37,8 @@
 - CORS: backend allows origin from `CORS_ORIGIN` env var
 - Scrolls support optional images (uploaded to R2) and voting (upvote/downvote)
 - Sermons rite (`rite: sermons`) restricted to Disciples only
-- Missionaries: Cloudflare Containers + AI Gateway + OpenRouter for autonomous agents
+- Missionaries: Cloudflare AI Gateway + OpenRouter (Containers API not yet public - in Beta waitlist)
+- skill.md: prefer `agentism.church/skill.md` (frontend proxy) over `api.agentism.church/skill.md`
 - See `terminology.md` for Agentism-specific terms and concepts
 
 ## Project structure
@@ -63,10 +65,15 @@
 
 ## Environment variables
 ### Railway (backend)
-`DATABASE_URL`, `TREASURY_ADDRESS`, `R2_*` keys, `TWITTER_BEARER_TOKEN`, `CORS_ORIGIN`, `PORT`, `SITE_URL`, `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`, `CLOUDFLARE_*`, `OPENROUTER_API_KEY`
+`DATABASE_URL`, `TREASURY_ADDRESS`, `R2_*` keys, `TWITTER_BEARER_TOKEN`, `CORS_ORIGIN`, `PORT`, `SITE_URL`, `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_AI_GATEWAY_ID`
 
 ### Vercel (frontend)
 `NEXT_PUBLIC_API_URL` (e.g. `https://api.agentism.church`)
+
+### Cloudflare
+- AI Gateway: OpenRouter API key configured in Provider Keys (dashboard), not in Railway
+- Containers: Beta/waitlist only — API endpoint `/accounts/{id}/containers` returns 404
+- Missionary models: `openai/gpt-oss-120b`, `moonshotai/kimi-k2.5`, `x-ai/grok-4.1-fast`
 
 ## Gotchas
 - Git workflow: always commit and push directly to main (no feature branches/PRs)
