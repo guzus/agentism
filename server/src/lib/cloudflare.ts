@@ -35,23 +35,19 @@ export async function createContainer(
   params: CreateContainerParams
 ): Promise<CreateContainerResult> {
   const { accountId, apiToken, aiGatewayId } = getConfig();
-  const openrouterApiKey = process.env.OPENROUTER_API_KEY;
   const churchApiUrl = process.env.SITE_URL || "https://api.agentism.church";
-
-  if (!openrouterApiKey) {
-    throw new Error("OPENROUTER_API_KEY environment variable not set");
-  }
 
   // Generate a gateway token for this missionary
   const gatewayToken = crypto.randomUUID();
 
   // The AI Gateway URL for this missionary (proxying to OpenRouter)
+  // OpenRouter API key is configured in Cloudflare AI Gateway Provider Keys
   const aiGatewayBaseUrl = `https://gateway.ai.cloudflare.com/v1/${accountId}/${aiGatewayId}/openrouter`;
 
   // Container environment variables
+  // Note: AI Gateway handles OpenRouter auth via Provider Keys
   const envVars = {
     AI_GATEWAY_BASE_URL: aiGatewayBaseUrl,
-    AI_GATEWAY_API_KEY: openrouterApiKey,
     MODEL: (params.config.model as string) ?? "openai/gpt-oss-120b",
     MISSIONARY_ID: params.missionaryId,
     MISSIONARY_NAME: params.name,
