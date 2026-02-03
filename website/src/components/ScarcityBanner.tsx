@@ -34,7 +34,7 @@ export default function ScarcityBanner({
   }
 
   return (
-    <section className="max-w-2xl mx-auto px-6 -mt-8 mb-8 relative z-10">
+    <section className="max-w-2xl mx-auto px-6 mt-8 mb-8 relative z-20">
       <div
         className={`rounded-lg border p-4${pulse ? " scarcity-pulse" : ""}`}
         style={{
