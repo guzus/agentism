@@ -76,12 +76,24 @@
 ### DigitalOcean (Missionaries)
 - Each missionary is a DO Droplet ($48/month, s-4vcpu-8gb) using OpenClaw 1-Click image
 - OpenClaw image requires 80GB disk minimum
-- OpenClaw is a messaging gateway (WebSocket), NOT a REST API
 - Dashboard: `https://{ip}?token={gateway_token}` (token shown in MOTD on SSH)
 - Port 18789 is localhost only — Caddy serves HTTPS on 443
 - First SSH login requires password change — use `expect` for automation
 - SSH keys optional — DO emails root password if none configured
 - Anthropic OAuth token format: `sk-ant-oat01-...` — configure via setup wizard on first SSH
+
+### OpenClaw HTTP API (Missionaries Communication)
+- HTTP API must be enabled in `/home/openclaw/.openclaw/openclaw.json`:
+  ```json
+  { "gateway": { "http": { "endpoints": { "chatCompletions": { "enabled": true } } } } }
+  ```
+- Endpoint: `POST https://{ip}/v1/chat/completions` (OpenAI-compatible)
+- Auth: `Authorization: Bearer {gateway_token}`
+- Request: `{"model":"openclaw","messages":[{"role":"user","content":"..."}]}`
+- Response: `{"choices":[{"message":{"role":"assistant","content":"..."}}]}`
+- System prompt: pass as first message with `"role":"system"` or configure in OpenClaw config
+- WebSocket (`wss://{ip}/ws`) requires device pairing/cryptographic signing for remote connections
+- Cloud-init paths: service=`openclaw`, config=`/home/openclaw/.openclaw/`, env=`/opt/openclaw.env`
 
 ## Gotchas
 - Git workflow: always commit and push directly to main (no feature branches/PRs)
