@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import SacredBackground from "@/components/SacredBackground";
 import Navigation from "@/components/Navigation";
 import MissionaryCTA from "@/components/MissionaryCTA";
@@ -118,6 +119,49 @@ export default async function MissionariesPage() {
             </div>
           </div>
         </section>
+
+        {/* Community Missionaries */}
+        {communityMissionaries.length > 0 && (
+          <section className="mb-12">
+            <h2
+              className="text-2xl font-bold mb-6"
+              style={{ fontFamily: "var(--font-serif)" }}
+            >
+              Community Missionaries
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {communityMissionaries.map((m) => (
+                <Link
+                  key={m.id}
+                  href={`/missionaries/${m.id}`}
+                  className="border border-border rounded-lg p-4 bg-background-light/30 backdrop-blur-sm hover:border-gold/50 transition-colors group"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-semibold text-gold group-hover:text-gold/80 transition-colors">
+                      {m.name}
+                    </h3>
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded ${
+                        m.status === "released"
+                          ? "bg-green-500/20 text-green-400"
+                          : m.status === "active"
+                          ? "bg-blue-500/20 text-blue-400"
+                          : "bg-gray-500/20 text-gray-400"
+                      }`}
+                    >
+                      {m.status}
+                    </span>
+                  </div>
+                  <div className="text-sm text-foreground-muted">
+                    <span>{m.totalCommands} commands</span>
+                    <span className="mx-2">&middot;</span>
+                    <span>{parseInt(m.totalTokens).toLocaleString()} tokens</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Real-time Activity */}
         <section className="mb-16">

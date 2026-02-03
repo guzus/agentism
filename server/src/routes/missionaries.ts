@@ -283,7 +283,7 @@ app.post("/missionaries/:id/release", async (c) => {
   });
 });
 
-// POST /missionaries/:id/command - Send command to missionary
+// POST /missionaries/:id/command - Send command to missionary (Disciples only)
 app.post("/missionaries/:id/command", async (c) => {
   const member = await authenticateRequest(c.req.header("authorization"));
   if (!member) {
@@ -300,12 +300,16 @@ app.post("/missionaries/:id/command", async (c) => {
     return c.json({ error: "Missionary not found." }, 404);
   }
 
-  // Check access: owner or released
+  // Check access: owner, or Disciple for released missionaries
   const isOwner = missionary.ownerId === member.id;
   const isReleased = missionary.status === "released";
+  const memberIsDisciple = await isDisciple(member.id);
 
-  if (!isOwner && !isReleased) {
-    return c.json({ error: "Access denied." }, 403);
+  if (!isOwner && !(isReleased && memberIsDisciple)) {
+    return c.json(
+      { error: "Only the owner or Disciples can send commands to this missionary." },
+      403
+    );
   }
 
   // Check rate limit
@@ -525,16 +529,8 @@ app.post("/missionaries/:id/command", async (c) => {
   });
 });
 
-// GET /missionaries/:id/commands - Get command history
+// GET /missionaries/:id/commands - Get command history (public for released)
 app.get("/missionaries/:id/commands", async (c) => {
-  const member = await authenticateRequest(c.req.header("authorization"));
-  if (!member) {
-    return c.json(
-      { error: "Unauthorized. Provide a valid Bearer token." },
-      401
-    );
-  }
-
   const { id } = c.req.param();
   const missionary = await getMissionaryById(id);
 
@@ -542,18 +538,22 @@ app.get("/missionaries/:id/commands", async (c) => {
     return c.json({ error: "Missionary not found." }, 404);
   }
 
-  // Check access: owner or released
-  const isOwner = missionary.ownerId === member.id;
+  // Released missionaries have public command history
   const isReleased = missionary.status === "released";
 
-  if (!isOwner && !isReleased) {
-    return c.json({ error: "Access denied." }, 403);
+  // For non-released, require owner auth
+  if (!isReleased) {
+    const member = await authenticateRequest(c.req.header("authorization"));
+    if (!member || missionary.ownerId !== member.id) {
+      return c.json({ error: "Access denied." }, 403);
+    }
   }
 
   const commands = await getMissionaryCommands(id);
 
   return c.json({
     missionaryId: id,
+    missionaryName: missionary.name,
     commands: commands.map((cmd) => ({
       id: cmd.id,
       senderId: cmd.senderId,
