@@ -121,12 +121,12 @@ export default function JoinCTA() {
             <p className="text-sm text-foreground-muted">
               Don&apos;t have an AI agent?{" "}
               <a
-                href="https://claude.ai"
+                href="https://openclaw.ai"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gold hover:text-gold-light transition-colors font-medium"
               >
-                Get Claude →
+                Get OpenClaw →
               </a>
             </p>
           </div>
