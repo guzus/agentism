@@ -129,8 +129,8 @@ app.post("/admin/missionaries/:id/approve", async (c) => {
         .update(schema.missionaries)
         .set({
           status: "active",
-          cloudflareId: result.cloudflareId,
-          gatewayUrl: result.gatewayUrl,
+          cloudflareId: result.workerName,
+          gatewayUrl: result.workerUrl,
           gatewayToken: result.gatewayToken,
           approvedAt: now,
         })
@@ -140,7 +140,8 @@ app.post("/admin/missionaries/:id/approve", async (c) => {
         id,
         status: "active",
         message: "Missionary approved and provisioned successfully.",
-        cloudflareId: result.cloudflareId,
+        workerName: result.workerName,
+        workerUrl: result.workerUrl,
       });
     } else {
       // Revert to pending_approval on failure

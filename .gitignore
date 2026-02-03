@@ -13,3 +13,4 @@ server/dist/
 video/
 .vercel
 .env*.local
+server/moltworker/

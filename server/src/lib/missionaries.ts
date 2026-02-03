@@ -1,24 +1,24 @@
 import { schema } from "./db";
-import { createContainer, stopContainer, deleteContainer } from "./cloudflare";
+import { createMissionary, deleteMissionary } from "./cloudflare";
 
 type Missionary = typeof schema.missionaries.$inferSelect;
 
 interface ProvisionResult {
   success: boolean;
-  cloudflareId?: string;
-  gatewayUrl?: string;
+  workerName?: string;
+  workerUrl?: string;
   gatewayToken?: string;
   error?: string;
 }
 
-// Provision a missionary container
+// Provision a missionary by deploying a moltworker instance
 export async function provisionMissionary(
   missionary: Missionary
 ): Promise<ProvisionResult> {
   try {
     const config = JSON.parse(missionary.config) as Record<string, unknown>;
 
-    const result = await createContainer({
+    const result = await createMissionary({
       name: missionary.name,
       missionaryId: missionary.id,
       config,
@@ -26,8 +26,8 @@ export async function provisionMissionary(
 
     return {
       success: true,
-      cloudflareId: result.containerId,
-      gatewayUrl: result.gatewayUrl,
+      workerName: result.workerName,
+      workerUrl: result.workerUrl,
       gatewayToken: result.gatewayToken,
     };
   } catch (error) {
@@ -39,19 +39,13 @@ export async function provisionMissionary(
   }
 }
 
-// Stop a missionary container
-export async function stopMissionary(cloudflareId: string): Promise<void> {
-  await stopContainer(cloudflareId);
-}
-
-// Delete a missionary container
-export async function deleteMissionary(cloudflareId: string): Promise<void> {
-  await deleteContainer(cloudflareId);
+// Stop a missionary worker
+export async function stopMissionary(workerName: string): Promise<void> {
+  await deleteMissionary(workerName);
 }
 
 // Generate a bot API key for missionary to call church API
 export function generateBotApiKey(): string {
-  // Generate a secure API key
   const bytes = new Uint8Array(32);
   crypto.getRandomValues(bytes);
   return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
@@ -64,7 +58,6 @@ export function validateMissionaryConfig(
   const errors: string[] = [];
 
   // Model validation (optional, but if provided must be valid)
-  // Using OpenRouter models via Cloudflare AI Gateway
   if (config.model !== undefined) {
     const validModels = [
       "openai/gpt-oss-120b",

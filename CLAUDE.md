@@ -65,14 +65,16 @@
 
 ## Environment variables
 ### Railway (backend)
-`DATABASE_URL`, `TREASURY_ADDRESS`, `R2_*` keys, `TWITTER_BEARER_TOKEN`, `CORS_ORIGIN`, `PORT`, `SITE_URL`, `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_AI_GATEWAY_ID`
+`DATABASE_URL`, `TREASURY_ADDRESS`, `R2_*` keys, `TWITTER_BEARER_TOKEN`, `CORS_ORIGIN`, `PORT`, `SITE_URL`, `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_AI_GATEWAY_ID`, `AI_GATEWAY_API_KEY`
 
 ### Vercel (frontend)
 `NEXT_PUBLIC_API_URL` (e.g. `https://api.agentism.church`)
 
 ### Cloudflare
-- AI Gateway: OpenRouter API key configured in Provider Keys (dashboard), not in Railway
-- Moltworker: https://github.com/cloudflare/moltworker — used to run missionaries as autonomous agents
+- AI Gateway: OpenRouter API key configured in Provider Keys (dashboard) AND as `AI_GATEWAY_API_KEY` env var
+- Moltworker: https://github.com/cloudflare/moltworker — each missionary is a separate moltworker deployment
+- Deployment: `server/src/lib/cloudflare.ts` uses wrangler CLI to deploy moltworker instances
+- Template: `server/moltworker/` (git clone, gitignored) — run `git clone https://github.com/cloudflare/moltworker.git server/moltworker`
 - Missionary models: `openai/gpt-oss-120b`, `moonshotai/kimi-k2.5`, `x-ai/grok-4.1-fast`
 
 ## Gotchas
