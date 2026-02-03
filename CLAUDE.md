@@ -76,10 +76,12 @@
 ### DigitalOcean (Missionaries)
 - Each missionary is a DO Droplet ($48/month, s-4vcpu-8gb) using OpenClaw 1-Click image
 - OpenClaw image requires 80GB disk minimum
-- Gateway URL: `http://{ip}:18789/v1/chat/completions` (OpenAI-compatible)
-- Cloud-init takes 1-2 min after droplet status shows "active"
+- OpenClaw is a messaging gateway (WebSocket), NOT a REST API
+- Dashboard: `https://{ip}?token={gateway_token}` (token shown in MOTD on SSH)
+- Port 18789 is localhost only — Caddy serves HTTPS on 443
+- First SSH login requires password change — use `expect` for automation
 - SSH keys optional — DO emails root password if none configured
-- Requires `ANTHROPIC_API_KEY` env var on Railway for LLM access
+- Anthropic OAuth token format: `sk-ant-oat01-...` — configure via setup wizard on first SSH
 
 ## Gotchas
 - Git workflow: always commit and push directly to main (no feature branches/PRs)
@@ -91,4 +93,5 @@
 - Tailwind dynamic classes (`bg-${color}/20`) need safelist for prod
 - `[scrollId]/page.tsx` has local `RITE_COLORS` map (legacy, not yet DB-driven)
 - sshpk library: parsing only, no `generatePrivateKey()` — use `ssh-keygen` or crypto module
+- DO droplet first login: requires password change, breaks `sshpass` — use `expect` instead
 - Project name is "Openclaw Church" — "OpenClaw" alone is a different project
