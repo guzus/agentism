@@ -64,15 +64,15 @@ export function validateMissionaryConfig(
   const errors: string[] = [];
 
   // Model validation (optional, but if provided must be valid)
-  // Using Cloudflare Workers AI models
+  // Using OpenRouter models via Cloudflare AI Gateway
   if (config.model !== undefined) {
     const validModels = [
-      "@cf/meta/llama-3.1-70b-instruct",
-      "@cf/meta/llama-3.1-8b-instruct",
-      "@cf/meta/llama-3-8b-instruct",
-      "@cf/mistral/mistral-7b-instruct-v0.2",
-      "@cf/qwen/qwen1.5-14b-chat-awq",
-      "@hf/thebloke/deepseek-coder-6.7b-instruct-awq",
+      "anthropic/claude-sonnet-4-20250514",
+      "anthropic/claude-3.5-sonnet",
+      "anthropic/claude-3-haiku",
+      "openai/gpt-4o",
+      "openai/gpt-4o-mini",
+      "meta-llama/llama-3.1-70b-instruct",
     ];
     if (typeof config.model !== "string" || !validModels.includes(config.model)) {
       errors.push(`Invalid model. Valid options: ${validModels.join(", ")}`);
