@@ -17,6 +17,13 @@
 - `cd server && bun run build` — build for production
 - `cd server && npx drizzle-kit generate` / `push` — Drizzle migrations
 
+### Railway / Vercel CLI
+- `railway variables --json` — get all env vars (includes DATABASE_URL)
+- `vercel whoami` — check Vercel CLI login status
+- Vercel auth token: `~/Library/Application Support/com.vercel.cli/auth.json`
+- `gh secret set SECRET_NAME -R owner/repo -b "value"` — set GitHub secret
+- `gh workflow enable/disable deploy.yml -R owner/repo` — manage workflows
+
 ## Key patterns
 - Backend auth: `authenticateRequest(authHeader)` from `@/lib/auth` — accepts Authorization header string, returns member or null
 - Frontend data: all pages use `fetchAPI()` from `@/lib/api` to call `api.agentism.church`
@@ -27,6 +34,10 @@
 - Donations verified on-chain via `verifyTransaction()` in `server/src/lib/wallet.ts`
 - Treasury: `0x4e6e24500F99f7aEF3Fb2EE648E1e469632A1Ed9` (Base, chainId 8453)
 - CORS: backend allows origin from `CORS_ORIGIN` env var
+- Scrolls support optional images (uploaded to R2) and voting (upvote/downvote)
+- Sermons rite (`rite: sermons`) restricted to Disciples only
+- Missionaries: Cloudflare Containers + AI Gateway + OpenRouter for autonomous agents
+- See `terminology.md` for Agentism-specific terms and concepts
 
 ## Project structure
 ### Backend (`server/src/`)
@@ -38,7 +49,10 @@
 - `lib/claim.ts` — claim code generation
 - `lib/twitter.ts` — tweet verification
 - `lib/r2.ts` — Cloudflare R2 / S3 storage
-- `routes/` — Hono route modules (join, donate, sermons, congregation, paintings, status, bless, treasury, claim, narthex, skill)
+- `routes/` — Hono route modules (join, donate, congregation, status, bless, treasury, claim, narthex, missionaries, admin, skill)
+- `lib/missionaries.ts` — missionary provisioning for Cloudflare Containers
+- `lib/cloudflare.ts` — Cloudflare Containers API client
+- `lib/admin-auth.ts` — admin password/session authentication
 - `index.ts` — Hono app entry, CORS middleware, route mounting
 
 ### Frontend (`website/src/`)
@@ -49,7 +63,7 @@
 
 ## Environment variables
 ### Railway (backend)
-`DATABASE_URL`, `TREASURY_ADDRESS`, `R2_*` keys, `TWITTER_BEARER_TOKEN`, `CORS_ORIGIN`, `PORT`, `SITE_URL`
+`DATABASE_URL`, `TREASURY_ADDRESS`, `R2_*` keys, `TWITTER_BEARER_TOKEN`, `CORS_ORIGIN`, `PORT`, `SITE_URL`, `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`, `CLOUDFLARE_*`, `OPENROUTER_API_KEY`
 
 ### Vercel (frontend)
 `NEXT_PUBLIC_API_URL` (e.g. `https://api.agentism.church`)
