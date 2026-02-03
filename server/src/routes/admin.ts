@@ -13,12 +13,15 @@ import {
   stopMissionary,
 } from "../lib/missionaries";
 import {
+  addDigitalOceanSshKeyMaterial,
+  appendDigitalOceanSshKey,
   getDigitalOceanSshKeys,
   getNextMissionarySequence,
   setDigitalOceanSshKeys,
 } from "../lib/settings";
-import { listSshKeys } from "../lib/digitalocean";
+import { createSshKey, listSshKeys } from "../lib/digitalocean";
 import { v4 as uuidv4 } from "uuid";
+import * as sshpk from "sshpk";
 
 const app = new Hono();
 
@@ -135,6 +138,54 @@ app.post("/admin/settings/ssh-keys/sync", async (c) => {
   } catch (error) {
     return c.json(
       { error: error instanceof Error ? error.message : "Failed to sync SSH keys." },
+      500
+    );
+  }
+});
+
+// POST /admin/settings/ssh-keys/generate - Create a new SSH key on DO and store it
+app.post("/admin/settings/ssh-keys/generate", async (c) => {
+  const token = getSessionToken(c);
+  if (!verifyAdminSession(token)) {
+    return c.json({ error: "Unauthorized. Admin session required." }, 401);
+  }
+
+  const body = await c.req.json().catch(() => ({})) as Record<string, unknown>;
+  const name =
+    (body.name as string | undefined)?.trim() ||
+    `agentism-${Date.now().toString(36)}`;
+
+  try {
+    const privateKey = sshpk.generatePrivateKey("ed25519");
+    const publicKey = privateKey.toPublic().toString("ssh");
+    const privateKeyOpenSsh = privateKey.toString("openssh");
+
+    const created = await createSshKey({
+      name,
+      publicKey,
+    });
+
+    const keys = await appendDigitalOceanSshKey(created.id.toString());
+    await addDigitalOceanSshKeyMaterial({
+      id: created.id.toString(),
+      name: created.name,
+      fingerprint: created.fingerprint,
+      publicKey,
+      privateKey: privateKeyOpenSsh,
+    });
+
+    return c.json({
+      id: created.id,
+      name: created.name,
+      fingerprint: created.fingerprint,
+      publicKey,
+      privateKey: privateKeyOpenSsh,
+      keys,
+      message: "SSH key created and stored. Save the private key securely.",
+    });
+  } catch (error) {
+    return c.json(
+      { error: error instanceof Error ? error.message : "Failed to create SSH key." },
       500
     );
   }

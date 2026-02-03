@@ -67,6 +67,14 @@ interface SshKeysResponse {
   }>;
 }
 
+interface CreateSshKeyResponse {
+  ssh_key: {
+    id: number;
+    fingerprint: string;
+    name: string;
+  };
+}
+
 // Create a DigitalOcean Droplet for a missionary
 export async function createMissionary(
   params: CreateMissionaryParams
@@ -265,6 +273,37 @@ export async function listSshKeys(): Promise<
     fingerprint: key.fingerprint,
     name: key.name,
   }));
+}
+
+export async function createSshKey(params: {
+  name: string;
+  publicKey: string;
+}): Promise<{ id: number; fingerprint: string; name: string }> {
+  const { apiToken } = getConfig();
+
+  const response = await fetch("https://api.digitalocean.com/v2/account/keys", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiToken}`,
+    },
+    body: JSON.stringify({
+      name: params.name,
+      public_key: params.publicKey,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Failed to create SSH key: ${response.status} - ${error}`);
+  }
+
+  const data = (await response.json()) as CreateSshKeyResponse;
+  return {
+    id: data.ssh_key.id,
+    fingerprint: data.ssh_key.fingerprint,
+    name: data.ssh_key.name,
+  };
 }
 
 // Poll for droplet to be ready (has IP address)
