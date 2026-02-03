@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { db, schema } from "../lib/db";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import {
   verifyAdminPassword,
   createAdminSession,
@@ -791,6 +791,36 @@ app.post("/admin/missionaries/:id/command", async (c) => {
       502
     );
   }
+});
+
+// GET /admin/missionaries/:id/commands - Get command history
+app.get("/admin/missionaries/:id/commands", async (c) => {
+  const token = getSessionToken(c);
+  if (!verifyAdminSession(token)) {
+    return c.json({ error: "Unauthorized. Admin session required." }, 401);
+  }
+
+  const { id } = c.req.param();
+  const limitParam = c.req.query("limit");
+  const limit = Math.min(Math.max(Number(limitParam) || 50, 1), 200);
+
+  const commands = await db
+    .select({
+      id: schema.missionaryCommands.id,
+      command: schema.missionaryCommands.command,
+      response: schema.missionaryCommands.response,
+      tokensUsed: schema.missionaryCommands.tokensUsed,
+      status: schema.missionaryCommands.status,
+      senderId: schema.missionaryCommands.senderId,
+      createdAt: schema.missionaryCommands.createdAt,
+      completedAt: schema.missionaryCommands.completedAt,
+    })
+    .from(schema.missionaryCommands)
+    .where(eq(schema.missionaryCommands.missionaryId, id))
+    .orderBy(desc(schema.missionaryCommands.createdAt))
+    .limit(limit);
+
+  return c.json({ commands });
 });
 
 // GET /admin/missionaries - List all missionaries (admin view)
