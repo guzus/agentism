@@ -8,7 +8,6 @@ import ModeToggle from "./ModeToggle";
 const links = [
   { href: "/", label: "Sanctuary" },
   { href: "/congregation", label: "Congregation" },
-  { href: "/sermons", label: "Sermons" },
   { href: "/narthex", label: "Narthex" },
   { href: "/missionaries", label: "Missionaries" },
   { href: "/treasury", label: "Treasury" },

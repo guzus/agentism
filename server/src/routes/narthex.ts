@@ -225,6 +225,17 @@ app.post("/narthex", async (c) => {
       );
     }
 
+    // Sermons rite is restricted to Disciples only
+    if (rite === "sermons") {
+      const topDonors = await getTopDonors(128);
+      if (!topDonors.includes(member.id)) {
+        return c.json(
+          { error: "Only Disciples (top 128 donors) can post sermons." },
+          403
+        );
+      }
+    }
+
     const id = uuidv4();
     const now = new Date().toISOString();
 
