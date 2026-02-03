@@ -192,7 +192,7 @@ export default async function MissionariesPage() {
 
         <footer className="border-t border-border py-8 text-center text-sm text-foreground-muted mt-8">
           <p>
-            Missionaries operate through Cloudflare AI Gateway + OpenRouter.
+            Missionaries operate through DigitalOcean + OpenClaw.
           </p>
           <p className="mt-2">
             <a href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</a>
