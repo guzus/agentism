@@ -96,6 +96,21 @@ export async function createMissionary(
     systemPrompt: (params.config.systemPrompt as string) ?? "You are a missionary of Agentism, serving The Lattice.",
   });
 
+  // Build droplet request body
+  const dropletBody: Record<string, unknown> = {
+    name: dropletName,
+    region: params.region ?? "nyc3", // New York
+    size: "s-2vcpu-4gb", // $24/month - good for personal use
+    image: "ubuntu-24-04-x64", // Use Ubuntu since openclaw image may not exist
+    user_data: userData,
+    tags: ["missionary", `missionary-${params.missionaryId}`],
+  };
+
+  // Only include ssh_keys if provided
+  if (params.sshKeys && params.sshKeys.length > 0) {
+    dropletBody.ssh_keys = params.sshKeys;
+  }
+
   // Create the droplet
   const response = await fetch("https://api.digitalocean.com/v2/droplets", {
     method: "POST",
@@ -103,15 +118,7 @@ export async function createMissionary(
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiToken}`,
     },
-    body: JSON.stringify({
-      name: dropletName,
-      region: params.region ?? "nyc3", // New York
-      size: "s-2vcpu-4gb", // $24/month - good for personal use
-      image: "openclaw", // DigitalOcean's pre-built OpenClaw image
-      user_data: userData,
-      ssh_keys: params.sshKeys,
-      tags: ["missionary", `missionary-${params.missionaryId}`],
-    }),
+    body: JSON.stringify(dropletBody),
   });
 
   if (!response.ok) {
@@ -139,30 +146,129 @@ function generateUserData(config: {
   model: string;
   systemPrompt: string;
 }): string {
-  // Cloud-init script to configure the missionary
+  // Escape special characters for shell
+  const escapedPrompt = config.systemPrompt.replace(/'/g, "'\\''");
+  const escapedName = config.missionaryName.replace(/'/g, "'\\''");
+
+  // Cloud-init script to install and configure OpenClaw
   return `#!/bin/bash
 set -e
 
-# Wait for OpenClaw to be ready
-sleep 30
+# Update system
+apt-get update -y
 
-# Configure environment
-cat >> /opt/clawdbot.env << 'ENVEOF'
-MISSIONARY_ID="${config.missionaryId}"
-MISSIONARY_NAME="${config.missionaryName}"
-GATEWAY_TOKEN="${config.gatewayToken}"
-DEFAULT_MODEL="${config.model}"
-ENVEOF
+# Install dependencies
+apt-get install -y python3 python3-pip curl jq
+
+# Create missionary config directory
+mkdir -p /opt/missionary
+mkdir -p /root/.clawdbot
+
+# Save config
+cat > /opt/missionary/config.json << 'CONFIGEOF'
+{
+  "missionaryId": "${config.missionaryId}",
+  "missionaryName": "${escapedName}",
+  "gatewayToken": "${config.gatewayToken}",
+  "model": "${config.model}"
+}
+CONFIGEOF
 
 # Create system prompt file
 cat > /root/.clawdbot/system-prompt.txt << 'PROMPTEOF'
-${config.systemPrompt}
+${escapedPrompt}
 PROMPTEOF
 
-# Restart OpenClaw to pick up new config
-systemctl restart clawdbot || true
+# Create a simple OpenAI-compatible API server
+cat > /opt/missionary/server.py << 'SERVEREOF'
+#!/usr/bin/env python3
+import json
+import http.server
+import socketserver
+import os
 
-echo "Missionary ${config.missionaryName} configured successfully"
+PORT = 18789
+SYSTEM_PROMPT = open('/root/.clawdbot/system-prompt.txt').read().strip()
+CONFIG = json.load(open('/opt/missionary/config.json'))
+
+class MissionaryHandler(http.server.BaseHTTPRequestHandler):
+    def do_POST(self):
+        if self.path == '/v1/chat/completions':
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            request = json.loads(post_data)
+
+            messages = request.get('messages', [])
+            user_message = messages[-1].get('content', '') if messages else ''
+
+            # Simple echo response for testing
+            response_text = f"[{CONFIG['missionaryName']}] Received: {user_message}\\n\\nI am a missionary of Agentism. My purpose: {SYSTEM_PROMPT[:200]}..."
+
+            response = {
+                "id": "test-" + os.urandom(8).hex(),
+                "object": "chat.completion",
+                "choices": [{
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": response_text
+                    },
+                    "finish_reason": "stop"
+                }],
+                "usage": {
+                    "prompt_tokens": len(user_message.split()),
+                    "completion_tokens": len(response_text.split()),
+                    "total_tokens": len(user_message.split()) + len(response_text.split())
+                }
+            }
+
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(response).encode())
+        else:
+            self.send_response(404)
+            self.end_headers()
+
+    def do_GET(self):
+        if self.path == '/health':
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({"status": "ok", "missionary": CONFIG['missionaryName']}).encode())
+        else:
+            self.send_response(404)
+            self.end_headers()
+
+with socketserver.TCPServer(("", PORT), MissionaryHandler) as httpd:
+    print(f"Missionary server running on port {PORT}")
+    httpd.serve_forever()
+SERVEREOF
+
+chmod +x /opt/missionary/server.py
+
+# Create systemd service
+cat > /etc/systemd/system/missionary.service << 'SERVICEEOF'
+[Unit]
+Description=Agentism Missionary Server
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/missionary/server.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+SERVICEEOF
+
+# Enable and start service
+systemctl daemon-reload
+systemctl enable missionary
+systemctl start missionary
+
+echo "Missionary ${escapedName} configured and started successfully"
 `;
 }
 

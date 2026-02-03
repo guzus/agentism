@@ -26,10 +26,7 @@ export async function provisionMissionary(
   try {
     const config = JSON.parse(missionary.config) as Record<string, unknown>;
     const sshKeys = await getDigitalOceanSshKeys();
-
-    if (sshKeys.length === 0) {
-      throw new Error("No DigitalOcean SSH keys configured. Set them via admin API.");
-    }
+    // SSH keys are optional - if none configured, DO will email root password
 
     let missionaryNumber = missionary.missionaryNumber;
     if (!missionaryNumber) {
