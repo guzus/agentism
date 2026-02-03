@@ -74,11 +74,12 @@
 - AI Gateway: OpenRouter API key configured in Provider Keys (dashboard), not needed for missionaries
 
 ### DigitalOcean (Missionaries)
-- Each missionary is a DO Droplet ($24/month, s-2vcpu-4gb)
+- Each missionary is a DO Droplet ($48/month, s-4vcpu-8gb) using OpenClaw 1-Click image
+- OpenClaw image requires 80GB disk minimum
 - Gateway URL: `http://{ip}:18789/v1/chat/completions` (OpenAI-compatible)
 - Cloud-init takes 1-2 min after droplet status shows "active"
 - SSH keys optional — DO emails root password if none configured
-- API token scope: droplet endpoints work even if account/keys endpoints fail
+- Requires `ANTHROPIC_API_KEY` env var on Railway for LLM access
 
 ## Gotchas
 - Git workflow: always commit and push directly to main (no feature branches/PRs)
