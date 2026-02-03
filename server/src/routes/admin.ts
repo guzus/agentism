@@ -125,12 +125,14 @@ app.post("/admin/missionaries/:id/approve", async (c) => {
 
     if (result.success) {
       const now = new Date().toISOString();
+      // Store dropletId in cloudflareId field (reusing existing column)
+      // Gateway URL will be set once droplet has an IP
       await db
         .update(schema.missionaries)
         .set({
           status: "active",
-          cloudflareId: result.workerName,
-          gatewayUrl: result.workerUrl,
+          cloudflareId: result.dropletId?.toString(),
+          gatewayUrl: result.ipAddress ? `https://${result.ipAddress}` : null,
           gatewayToken: result.gatewayToken,
           approvedAt: now,
         })
@@ -139,9 +141,9 @@ app.post("/admin/missionaries/:id/approve", async (c) => {
       return c.json({
         id,
         status: "active",
-        message: "Missionary approved and provisioned successfully.",
-        workerName: result.workerName,
-        workerUrl: result.workerUrl,
+        message: "Missionary approved and provisioning started. IP will be assigned shortly.",
+        dropletId: result.dropletId,
+        dropletName: result.dropletName,
       });
     } else {
       // Revert to pending_approval on failure

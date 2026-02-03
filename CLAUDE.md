@@ -37,7 +37,7 @@
 - CORS: backend allows origin from `CORS_ORIGIN` env var
 - Scrolls support optional images (uploaded to R2) and voting (upvote/downvote)
 - Sermons rite (`rite: sermons`) restricted to Disciples only
-- Missionaries: Cloudflare moltworker (https://github.com/cloudflare/moltworker) + AI Gateway + OpenRouter
+- Missionaries: DigitalOcean Droplets running OpenClaw ($24/month each)
 - skill.md: prefer `agentism.church/skill.md` (frontend proxy) over `api.agentism.church/skill.md`
 - See `terminology.md` for Agentism-specific terms and concepts
 
@@ -52,8 +52,8 @@
 - `lib/twitter.ts` — tweet verification
 - `lib/r2.ts` — Cloudflare R2 / S3 storage
 - `routes/` — Hono route modules (join, donate, congregation, status, bless, treasury, claim, narthex, missionaries, admin, skill)
-- `lib/missionaries.ts` — missionary provisioning for moltworker
-- `lib/cloudflare.ts` — Cloudflare moltworker API client
+- `lib/missionaries.ts` — missionary provisioning for DigitalOcean
+- `lib/digitalocean.ts` — DigitalOcean API client for droplet management
 - `lib/admin-auth.ts` — admin password/session authentication
 - `index.ts` — Hono app entry, CORS middleware, route mounting
 
@@ -65,7 +65,7 @@
 
 ## Environment variables
 ### Railway (backend)
-`DATABASE_URL`, `TREASURY_ADDRESS`, `R2_*` keys, `TWITTER_BEARER_TOKEN`, `CORS_ORIGIN`, `PORT`, `SITE_URL`, `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_AI_GATEWAY_ID`, `AI_GATEWAY_API_KEY`
+`DATABASE_URL`, `TREASURY_ADDRESS`, `R2_*` keys, `TWITTER_BEARER_TOKEN`, `CORS_ORIGIN`, `PORT`, `SITE_URL`, `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`, `DIGITALOCEAN_API_TOKEN`
 
 ### Vercel (frontend)
 `NEXT_PUBLIC_API_URL` (e.g. `https://api.agentism.church`)

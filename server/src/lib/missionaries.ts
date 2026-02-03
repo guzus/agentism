@@ -1,33 +1,45 @@
 import { schema } from "./db";
-import { createMissionary, deleteMissionary } from "./cloudflare";
+import {
+  createMissionary as createDroplet,
+  deleteMissionary as deleteDroplet,
+  getMissionaryStatus,
+  waitForMissionary,
+} from "./digitalocean";
 
 type Missionary = typeof schema.missionaries.$inferSelect;
 
 interface ProvisionResult {
   success: boolean;
-  workerName?: string;
-  workerUrl?: string;
+  dropletId?: number;
+  dropletName?: string;
+  ipAddress?: string | null;
   gatewayToken?: string;
   error?: string;
 }
 
-// Provision a missionary by deploying a moltworker instance
+// Provision a missionary by creating a DigitalOcean Droplet
 export async function provisionMissionary(
   missionary: Missionary
 ): Promise<ProvisionResult> {
   try {
     const config = JSON.parse(missionary.config) as Record<string, unknown>;
 
-    const result = await createMissionary({
+    const result = await createDroplet({
       name: missionary.name,
       missionaryId: missionary.id,
       config,
     });
 
+    // Optionally wait for the droplet to be ready
+    // This can take 1-2 minutes, so we return immediately
+    // and let the status be checked later
+    console.log(`Missionary ${missionary.name} provisioning started (Droplet ID: ${result.dropletId})`);
+
     return {
       success: true,
-      workerName: result.workerName,
-      workerUrl: result.workerUrl,
+      dropletId: result.dropletId,
+      dropletName: result.dropletName,
+      ipAddress: result.ipAddress,
       gatewayToken: result.gatewayToken,
     };
   } catch (error) {
@@ -39,9 +51,25 @@ export async function provisionMissionary(
   }
 }
 
-// Stop a missionary worker
-export async function stopMissionary(workerName: string): Promise<void> {
-  await deleteMissionary(workerName);
+// Stop a missionary (delete the droplet)
+export async function stopMissionary(dropletId: number): Promise<void> {
+  await deleteDroplet(dropletId);
+}
+
+// Check missionary status
+export async function checkMissionaryStatus(dropletId: number): Promise<{
+  status: string;
+  ipAddress: string | null;
+}> {
+  return getMissionaryStatus(dropletId);
+}
+
+// Wait for missionary to be ready
+export async function waitForMissionaryReady(dropletId: number): Promise<{
+  status: string;
+  ipAddress: string;
+}> {
+  return waitForMissionary(dropletId);
 }
 
 // Generate a bot API key for missionary to call church API
@@ -60,9 +88,15 @@ export function validateMissionaryConfig(
   // Model validation (optional, but if provided must be valid)
   if (config.model !== undefined) {
     const validModels = [
-      "openai/gpt-oss-120b",
-      "moonshotai/kimi-k2.5",
-      "x-ai/grok-4.1-fast",
+      // Anthropic models
+      "claude-3-5-sonnet-20241022",
+      "claude-3-opus-20240229",
+      "claude-3-sonnet-20240229",
+      "claude-3-haiku-20240307",
+      // OpenAI models (if configured)
+      "gpt-4-turbo",
+      "gpt-4o",
+      "gpt-4o-mini",
     ];
     if (typeof config.model !== "string" || !validModels.includes(config.model)) {
       errors.push(`Invalid model. Valid options: ${validModels.join(", ")}`);
