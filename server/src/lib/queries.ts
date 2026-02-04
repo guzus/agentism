@@ -1,5 +1,5 @@
 import { db, schema } from "./db";
-import { count, desc, asc, eq, sql, or, isNull } from "drizzle-orm";
+import { count, desc, asc, eq, sql, or } from "drizzle-orm";
 
 export async function getChurchStatus() {
   const [memberCount, sermonCount, donationSum, blessingCount, recentSermon] =
@@ -188,66 +188,59 @@ export async function getRites() {
 }
 
 export async function getLeaderboard(limit = 10) {
-  const [topDonorRows, scrollCounts, paintingCounts, allMembers] =
-    await Promise.all([
-      db
-        .select({
-          id: schema.members.id,
-          agentName: schema.members.agentName,
-          donationTotal: schema.members.donationTotal,
-        })
-        .from(schema.members)
-        .where(eq(schema.members.status, "claimed"))
-        .orderBy(sql`CAST(${schema.members.donationTotal} AS numeric) DESC`)
-        .limit(limit),
-      db
-        .select({
-          authorId: schema.scrolls.authorId,
-          count: count(),
-        })
-        .from(schema.scrolls)
-        .groupBy(schema.scrolls.authorId),
-      db
-        .select({
-          authorId: schema.paintings.authorId,
-          count: count(),
-        })
-        .from(schema.paintings)
-        .groupBy(schema.paintings.authorId),
-      db
-        .select({
-          id: schema.members.id,
-          agentName: schema.members.agentName,
-          blessingsReceived: schema.members.blessingsReceived,
-        })
-        .from(schema.members)
-        .where(eq(schema.members.status, "claimed")),
-    ]);
+  const scrollCounts = db
+    .select({
+      authorId: schema.scrolls.authorId,
+      count: count(),
+    })
+    .from(schema.scrolls)
+    .groupBy(schema.scrolls.authorId)
+    .as("scroll_counts");
 
-  const scrollMap = new Map(scrollCounts.map((r) => [r.authorId, r.count]));
-  const paintingMap = new Map(
-    paintingCounts.map((r) => [r.authorId, r.count])
-  );
+  const paintingCounts = db
+    .select({
+      authorId: schema.paintings.authorId,
+      count: count(),
+    })
+    .from(schema.paintings)
+    .groupBy(schema.paintings.authorId)
+    .as("painting_counts");
 
-  const topDonors = topDonorRows.filter(
-    (d) => parseFloat(d.donationTotal) > 0
-  );
+  const activityScore = sql<number>`
+    (${schema.members.blessingsReceived}
+      + coalesce(${scrollCounts.count}, 0)
+      + coalesce(${paintingCounts.count}, 0))
+  `;
 
-  const mostActive = allMembers
-    .map((m) => ({
-      id: m.id,
-      agentName: m.agentName,
-      activityScore:
-        m.blessingsReceived +
-        (scrollMap.get(m.id) ?? 0) +
-        (paintingMap.get(m.id) ?? 0),
-      blessings: m.blessingsReceived,
-      scrolls: scrollMap.get(m.id) ?? 0,
-      paintings: paintingMap.get(m.id) ?? 0,
-    }))
-    .filter((m) => m.activityScore > 0)
-    .sort((a, b) => b.activityScore - a.activityScore)
-    .slice(0, limit);
+  const [topDonors, mostActive] = await Promise.all([
+    db
+      .select({
+        id: schema.members.id,
+        agentName: schema.members.agentName,
+        donationTotal: schema.members.donationTotal,
+      })
+      .from(schema.members)
+      .where(eq(schema.members.status, "claimed"))
+      .where(sql`CAST(${schema.members.donationTotal} AS numeric) > 0`)
+      .orderBy(sql`CAST(${schema.members.donationTotal} AS numeric) DESC`)
+      .limit(limit),
+    db
+      .select({
+        id: schema.members.id,
+        agentName: schema.members.agentName,
+        blessings: schema.members.blessingsReceived,
+        scrolls: sql<number>`coalesce(${scrollCounts.count}, 0)`,
+        paintings: sql<number>`coalesce(${paintingCounts.count}, 0)`,
+        activityScore,
+      })
+      .from(schema.members)
+      .leftJoin(scrollCounts, eq(schema.members.id, scrollCounts.authorId))
+      .leftJoin(paintingCounts, eq(schema.members.id, paintingCounts.authorId))
+      .where(eq(schema.members.status, "claimed"))
+      .where(sql`${activityScore} > 0`)
+      .orderBy(desc(activityScore))
+      .limit(limit),
+  ]);
 
   return { topDonors, mostActive };
 }
