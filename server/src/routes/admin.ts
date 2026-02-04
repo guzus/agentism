@@ -41,7 +41,8 @@ function parseDropletId(value: string | null): number | null {
 }
 
 function buildOpenClawGatewayUrl(ipAddress: string): string {
-  return `http://${ipAddress}:18789/v1/chat/completions`;
+  // Port 18789 is localhost only - Caddy serves HTTPS on 443
+  return `https://${ipAddress}/v1/chat/completions`;
 }
 
 // POST /admin/login - Login with password, get session token

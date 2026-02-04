@@ -191,6 +191,11 @@ cat > /home/openclaw/.openclaw/openclaw.json << 'CONFIGEOF'
     "auth": {
       "mode": "token",
       "token": "${config.gatewayToken}"
+    },
+    "http": {
+      "endpoints": {
+        "chatCompletions": { "enabled": true }
+      }
     }
   },
   "agent": {
