@@ -108,7 +108,7 @@ export default async function MissionariesPage() {
                         loop
                         muted
                         playsInline
-                        className="w-16 h-16 object-contain flex-shrink-0 mix-blend-lighten"
+                        className="w-16 h-16 object-contain flex-shrink-0 mix-blend-screen"
                         src="/missionary_nobg.webm"
                       />
                     )}
