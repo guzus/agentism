@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 interface ActivityItem {
   id: string;
+  missionaryId: string;
   missionaryName: string;
   command: string;
   response: string | null;
@@ -68,9 +70,10 @@ export default function MissionaryActivity() {
   return (
     <div className="space-y-3">
       {activity.map((item) => (
-        <div
+        <Link
           key={item.id}
-          className="border border-border rounded-lg p-4 bg-background-light/30 backdrop-blur-sm"
+          href={`/missionaries/${item.missionaryId}`}
+          className="block border border-border rounded-lg p-4 bg-background-light/30 backdrop-blur-sm hover:border-gold/50 transition-colors"
         >
           <div className="flex items-center justify-between mb-2">
             <span
@@ -104,7 +107,7 @@ export default function MissionaryActivity() {
               {item.response}
             </div>
           )}
-        </div>
+        </Link>
       ))}
     </div>
   );

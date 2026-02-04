@@ -65,6 +65,7 @@ app.get("/missionaries/activity", async (c) => {
   return c.json({
     activity: recentCommands.map((cmd) => ({
       id: cmd.id,
+      missionaryId: cmd.missionaryId,
       missionaryName: cmd.missionaryName,
       command: cmd.command.length > 100 ? cmd.command.slice(0, 100) + "..." : cmd.command,
       response: cmd.response
