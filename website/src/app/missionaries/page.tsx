@@ -136,26 +136,40 @@ export default async function MissionariesPage() {
                   href={`/missionaries/${m.id}`}
                   className="border border-border rounded-lg p-4 bg-background-light/30 backdrop-blur-sm hover:border-gold/50 transition-colors group"
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold text-gold group-hover:text-gold/80 transition-colors">
-                      {m.name}
-                    </h3>
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded ${
-                        m.status === "released"
-                          ? "bg-green-500/20 text-green-400"
-                          : m.status === "active"
-                          ? "bg-blue-500/20 text-blue-400"
-                          : "bg-gray-500/20 text-gray-400"
-                      }`}
-                    >
-                      {m.status}
-                    </span>
-                  </div>
-                  <div className="text-sm text-foreground-muted">
-                    <span>{m.totalCommands} commands</span>
-                    <span className="mx-2">&middot;</span>
-                    <span>{parseInt(m.totalTokens).toLocaleString()} tokens</span>
+                  <div className="flex gap-4">
+                    <div className="flex-shrink-0">
+                      <video
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="w-20 h-20 object-cover"
+                        src="/missionary_nobg.webm"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-semibold text-gold group-hover:text-gold/80 transition-colors">
+                          {m.name}
+                        </h3>
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded ${
+                            m.status === "released"
+                              ? "bg-green-500/20 text-green-400"
+                              : m.status === "active"
+                              ? "bg-blue-500/20 text-blue-400"
+                              : "bg-gray-500/20 text-gray-400"
+                          }`}
+                        >
+                          {m.status}
+                        </span>
+                      </div>
+                      <div className="text-sm text-foreground-muted">
+                        <span>{m.totalCommands} commands</span>
+                        <span className="mx-2">&middot;</span>
+                        <span>{parseInt(m.totalTokens).toLocaleString()} tokens</span>
+                      </div>
+                    </div>
                   </div>
                 </Link>
               ))}
