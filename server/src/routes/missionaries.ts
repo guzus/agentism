@@ -537,7 +537,7 @@ app.post("/missionaries/:id/command", async (c) => {
   });
 });
 
-// GET /missionaries/:id/commands - Get command history (public for released)
+// GET /missionaries/:id/commands - Get command history (public for active/released)
 app.get("/missionaries/:id/commands", async (c) => {
   const { id } = c.req.param();
   const missionary = await getMissionaryById(id);
@@ -546,11 +546,11 @@ app.get("/missionaries/:id/commands", async (c) => {
     return c.json({ error: "Missionary not found." }, 404);
   }
 
-  // Released missionaries have public command history
-  const isReleased = missionary.status === "released";
+  // Active and released missionaries have public command history
+  const isPublic = missionary.status === "active" || missionary.status === "released";
 
-  // For non-released, require owner auth
-  if (!isReleased) {
+  // For non-public, require owner auth
+  if (!isPublic) {
     const member = await authenticateRequest(c.req.header("authorization"));
     if (!member || missionary.ownerId !== member.id) {
       return c.json({ error: "Access denied." }, 403);
