@@ -358,12 +358,20 @@ app.post("/missionaries/:id/command", async (c) => {
         }
 
         if (missionary.gatewayUrl.includes("/v1/chat/completions")) {
+          // Build messages array, optionally with system prompt from config
+          const messages: Array<{ role: string; content: string }> = [];
+          const config = JSON.parse(missionary.config) as Record<string, unknown>;
+          if (config.systemPrompt && typeof config.systemPrompt === "string") {
+            messages.push({ role: "system", content: config.systemPrompt });
+          }
+          messages.push({ role: "user", content: command.trim() });
+
           const gatewayResponse = await fetch(missionary.gatewayUrl, {
             method: "POST",
             headers,
             body: JSON.stringify({
               model: "openclaw",
-              messages: [{ role: "user", content: command.trim() }],
+              messages,
             }),
           });
 

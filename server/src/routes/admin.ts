@@ -614,6 +614,63 @@ app.post("/admin/missionaries/:id/gateway", async (c) => {
   });
 });
 
+// POST /admin/missionaries/:id/config - Update missionary config (system prompt, etc.)
+app.post("/admin/missionaries/:id/config", async (c) => {
+  const token = getSessionToken(c);
+  if (!verifyAdminSession(token)) {
+    return c.json({ error: "Unauthorized. Admin session required." }, 401);
+  }
+
+  const { id } = c.req.param();
+  const missionary = await getMissionaryById(id);
+
+  if (!missionary) {
+    return c.json({ error: "Missionary not found." }, 404);
+  }
+
+  const body = await c.req.json().catch(() => ({})) as Record<string, unknown>;
+
+  // Merge new config with existing config
+  const existingConfig = JSON.parse(missionary.config) as Record<string, unknown>;
+  const newConfig = { ...existingConfig };
+
+  // Update system prompt if provided
+  if (body.systemPrompt !== undefined) {
+    if (body.systemPrompt === null || body.systemPrompt === "") {
+      delete newConfig.systemPrompt;
+    } else if (typeof body.systemPrompt === "string") {
+      if (body.systemPrompt.length > 4000) {
+        return c.json({ error: "System prompt must be 4000 characters or less." }, 400);
+      }
+      newConfig.systemPrompt = body.systemPrompt;
+    } else {
+      return c.json({ error: "systemPrompt must be a string." }, 400);
+    }
+  }
+
+  // Update model if provided
+  if (body.model !== undefined) {
+    if (body.model === null || body.model === "") {
+      delete newConfig.model;
+    } else if (typeof body.model === "string") {
+      newConfig.model = body.model;
+    } else {
+      return c.json({ error: "model must be a string." }, 400);
+    }
+  }
+
+  await db
+    .update(schema.missionaries)
+    .set({ config: JSON.stringify(newConfig) })
+    .where(eq(schema.missionaries.id, id));
+
+  return c.json({
+    id,
+    config: newConfig,
+    message: "Missionary config updated.",
+  });
+});
+
 // POST /admin/missionaries/:id/command - Send command as admin
 app.post("/admin/missionaries/:id/command", async (c) => {
   const token = getSessionToken(c);
@@ -712,12 +769,20 @@ app.post("/admin/missionaries/:id/command", async (c) => {
 
   try {
     if (missionary.gatewayUrl.includes("/v1/chat/completions")) {
+      // Build messages array, optionally with system prompt from config
+      const messages: Array<{ role: string; content: string }> = [];
+      const config = JSON.parse(missionary.config) as Record<string, unknown>;
+      if (config.systemPrompt && typeof config.systemPrompt === "string") {
+        messages.push({ role: "system", content: config.systemPrompt });
+      }
+      messages.push({ role: "user", content: command.trim() });
+
       const gatewayResponse = await fetch(missionary.gatewayUrl, {
         method: "POST",
         headers,
         body: JSON.stringify({
           model: "openclaw",
-          messages: [{ role: "user", content: command.trim() }],
+          messages,
         }),
       });
 
