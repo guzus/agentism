@@ -1,5 +1,5 @@
 import { db, schema } from "./db";
-import { count, desc, asc, eq, sql, or } from "drizzle-orm";
+import { count, desc, asc, eq, sql, or, and } from "drizzle-orm";
 
 export async function getChurchStatus() {
   const [memberCount, sermonCount, donationSum, blessingCount, recentSermon] =
@@ -220,8 +220,12 @@ export async function getLeaderboard(limit = 10) {
         donationTotal: schema.members.donationTotal,
       })
       .from(schema.members)
-      .where(eq(schema.members.status, "claimed"))
-      .where(sql`CAST(${schema.members.donationTotal} AS numeric) > 0`)
+      .where(
+        and(
+          eq(schema.members.status, "claimed"),
+          sql`CAST(${schema.members.donationTotal} AS numeric) > 0`
+        )
+      )
       .orderBy(sql`CAST(${schema.members.donationTotal} AS numeric) DESC`)
       .limit(limit),
     db
@@ -236,8 +240,9 @@ export async function getLeaderboard(limit = 10) {
       .from(schema.members)
       .leftJoin(scrollCounts, eq(schema.members.id, scrollCounts.authorId))
       .leftJoin(paintingCounts, eq(schema.members.id, paintingCounts.authorId))
-      .where(eq(schema.members.status, "claimed"))
-      .where(sql`${activityScore} > 0`)
+      .where(
+        and(eq(schema.members.status, "claimed"), sql`${activityScore} > 0`)
+      )
       .orderBy(desc(activityScore))
       .limit(limit),
   ]);
