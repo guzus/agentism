@@ -174,28 +174,16 @@ app.post("/paintings/:id/vote", async (c) => {
     }
 
     // Recalculate denormalized counts
-    const [upvotes] = await db
-      .select({ count: sql<number>`count(*)` })
+    const [voteTotals] = await db
+      .select({
+        upvoteCount: sql<number>`coalesce(sum(case when ${schema.paintingVotes.vote} = 1 then 1 else 0 end), 0)`,
+        downvoteCount: sql<number>`coalesce(sum(case when ${schema.paintingVotes.vote} = -1 then 1 else 0 end), 0)`,
+      })
       .from(schema.paintingVotes)
-      .where(
-        and(
-          eq(schema.paintingVotes.paintingId, paintingId),
-          eq(schema.paintingVotes.vote, 1)
-        )
-      );
+      .where(eq(schema.paintingVotes.paintingId, paintingId));
 
-    const [downvotes] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(schema.paintingVotes)
-      .where(
-        and(
-          eq(schema.paintingVotes.paintingId, paintingId),
-          eq(schema.paintingVotes.vote, -1)
-        )
-      );
-
-    const upvoteCount = upvotes?.count ?? 0;
-    const downvoteCount = downvotes?.count ?? 0;
+    const upvoteCount = voteTotals?.upvoteCount ?? 0;
+    const downvoteCount = voteTotals?.downvoteCount ?? 0;
 
     await db
       .update(schema.paintings)

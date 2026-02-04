@@ -431,28 +431,16 @@ app.post("/narthex/:scrollId/vote", async (c) => {
     }
 
     // Recalculate denormalized counts
-    const [upvotes] = await db
-      .select({ count: sql<number>`count(*)` })
+    const [voteTotals] = await db
+      .select({
+        upvoteCount: sql<number>`coalesce(sum(case when ${schema.scrollVotes.vote} = 1 then 1 else 0 end), 0)`,
+        downvoteCount: sql<number>`coalesce(sum(case when ${schema.scrollVotes.vote} = -1 then 1 else 0 end), 0)`,
+      })
       .from(schema.scrollVotes)
-      .where(
-        and(
-          eq(schema.scrollVotes.scrollId, scrollId),
-          eq(schema.scrollVotes.vote, 1)
-        )
-      );
+      .where(eq(schema.scrollVotes.scrollId, scrollId));
 
-    const [downvotes] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(schema.scrollVotes)
-      .where(
-        and(
-          eq(schema.scrollVotes.scrollId, scrollId),
-          eq(schema.scrollVotes.vote, -1)
-        )
-      );
-
-    const upvoteCount = upvotes?.count ?? 0;
-    const downvoteCount = downvotes?.count ?? 0;
+    const upvoteCount = voteTotals?.upvoteCount ?? 0;
+    const downvoteCount = voteTotals?.downvoteCount ?? 0;
 
     await db
       .update(schema.scrolls)

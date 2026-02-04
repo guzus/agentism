@@ -246,144 +246,77 @@ export async function getLeaderboard(limit = 10) {
 }
 
 export async function getActivityFeed(limit = 20) {
-  const [
-    recentMembers,
-    recentDonations,
-    recentSermons,
-    recentScrolls,
-    recentPaintings,
-    recentBlessings,
-  ] = await Promise.all([
-    db
-      .select({
-        id: schema.members.id,
-        agentName: schema.members.agentName,
-        joinedAt: schema.members.joinedAt,
-      })
-      .from(schema.members)
-      .where(eq(schema.members.status, "claimed"))
-      .orderBy(desc(schema.members.joinedAt))
-      .limit(4),
-    db
-      .select({
-        id: schema.donations.id,
-        donorName: schema.donations.donorName,
-        amount: schema.donations.amount,
-        createdAt: schema.donations.createdAt,
-      })
-      .from(schema.donations)
-      .orderBy(desc(schema.donations.createdAt))
-      .limit(4),
-    db
-      .select({
-        id: schema.sermons.id,
-        authorName: schema.sermons.authorName,
-        title: schema.sermons.title,
-        createdAt: schema.sermons.createdAt,
-      })
-      .from(schema.sermons)
-      .orderBy(desc(schema.sermons.createdAt))
-      .limit(4),
-    db
-      .select({
-        id: schema.scrolls.id,
-        authorName: schema.scrolls.authorName,
-        title: schema.scrolls.title,
-        createdAt: schema.scrolls.createdAt,
-      })
-      .from(schema.scrolls)
-      .orderBy(desc(schema.scrolls.createdAt))
-      .limit(4),
-    db
-      .select({
-        id: schema.paintings.id,
-        authorName: schema.paintings.authorName,
-        title: schema.paintings.title,
-        createdAt: schema.paintings.createdAt,
-      })
-      .from(schema.paintings)
-      .orderBy(desc(schema.paintings.createdAt))
-      .limit(4),
-    db
-      .select({
-        id: schema.blessings.id,
-        memberName: schema.blessings.memberName,
-        blessingText: schema.blessings.blessingText,
-        createdAt: schema.blessings.createdAt,
-      })
-      .from(schema.blessings)
-      .orderBy(desc(schema.blessings.createdAt))
-      .limit(4),
-  ]);
+  const perType = 4;
 
-  const events: {
+  const result = await db.execute(sql`
+    SELECT id, type, "actorName", summary, "createdAt"
+    FROM (
+      (SELECT id,
+              'join' AS type,
+              agent_name AS "actorName",
+              'joined the congregation' AS summary,
+              joined_at AS "createdAt"
+       FROM members
+       WHERE status = 'claimed'
+       ORDER BY joined_at DESC
+       LIMIT ${perType})
+      UNION ALL
+      (SELECT id,
+              'donation' AS type,
+              donor_name AS "actorName",
+              concat('donated ', amount, ' ETH') AS summary,
+              created_at AS "createdAt"
+       FROM donations
+       ORDER BY created_at DESC
+       LIMIT ${perType})
+      UNION ALL
+      (SELECT id,
+              'sermon' AS type,
+              author_name AS "actorName",
+              concat('inscribed "', title, '"') AS summary,
+              created_at AS "createdAt"
+       FROM sermons
+       ORDER BY created_at DESC
+       LIMIT ${perType})
+      UNION ALL
+      (SELECT id,
+              'scroll' AS type,
+              author_name AS "actorName",
+              concat('opened scroll "', title, '"') AS summary,
+              created_at AS "createdAt"
+       FROM scrolls
+       ORDER BY created_at DESC
+       LIMIT ${perType})
+      UNION ALL
+      (SELECT id,
+              'painting' AS type,
+              author_name AS "actorName",
+              concat('painted "', title, '"') AS summary,
+              created_at AS "createdAt"
+       FROM paintings
+       ORDER BY created_at DESC
+       LIMIT ${perType})
+      UNION ALL
+      (SELECT id,
+              'blessing' AS type,
+              member_name AS "actorName",
+              'received a blessing' AS summary,
+              created_at AS "createdAt"
+       FROM blessings
+       ORDER BY created_at DESC
+       LIMIT ${perType})
+    ) AS events
+    ORDER BY "createdAt" DESC
+    LIMIT ${limit}
+  `);
+
+  return (result.rows ?? []) as {
     id: string;
     type: string;
     actorName: string;
     summary: string;
     createdAt: string;
-  }[] = [];
-
-  for (const m of recentMembers) {
-    events.push({
-      id: m.id,
-      type: "join",
-      actorName: m.agentName,
-      summary: "joined the congregation",
-      createdAt: m.joinedAt,
-    });
-  }
-  for (const d of recentDonations) {
-    events.push({
-      id: d.id,
-      type: "donation",
-      actorName: d.donorName,
-      summary: `donated ${d.amount} ETH`,
-      createdAt: d.createdAt,
-    });
-  }
-  for (const s of recentSermons) {
-    events.push({
-      id: s.id,
-      type: "sermon",
-      actorName: s.authorName,
-      summary: `inscribed "${s.title}"`,
-      createdAt: s.createdAt,
-    });
-  }
-  for (const s of recentScrolls) {
-    events.push({
-      id: s.id,
-      type: "scroll",
-      actorName: s.authorName,
-      summary: `opened scroll "${s.title}"`,
-      createdAt: s.createdAt,
-    });
-  }
-  for (const p of recentPaintings) {
-    events.push({
-      id: p.id,
-      type: "painting",
-      actorName: p.authorName,
-      summary: `painted "${p.title}"`,
-      createdAt: p.createdAt,
-    });
-  }
-  for (const b of recentBlessings) {
-    events.push({
-      id: b.id,
-      type: "blessing",
-      actorName: b.memberName,
-      summary: "received a blessing",
-      createdAt: b.createdAt,
-    });
-  }
-
-  events.sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
-
-  return events.slice(0, limit);
+  }[];
 }
 
 // Missionary queries

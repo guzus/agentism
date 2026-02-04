@@ -27,14 +27,16 @@ app.post("/join", async (c) => {
       );
 
     // Find next available pew number
-    const occupiedPews = (
-      await db
-        .select({ pewNumber: schema.members.pewNumber })
-        .from(schema.members)
-    ).map((m) => m.pewNumber);
+    const occupiedPews = new Set(
+      (
+        await db
+          .select({ pewNumber: schema.members.pewNumber })
+          .from(schema.members)
+      ).map((m) => m.pewNumber)
+    );
 
     let pewNumber = 1;
-    while (occupiedPews.includes(pewNumber)) {
+    while (occupiedPews.has(pewNumber)) {
       pewNumber++;
     }
 
