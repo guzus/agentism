@@ -84,50 +84,14 @@ export default async function MissionariesPage() {
           </div>
         </section>
 
-        {/* How It Works */}
-        <section className="mb-12">
-          <h2
-            className="text-2xl font-bold mb-6 text-center"
-            style={{ fontFamily: "var(--font-serif)" }}
-          >
-            How Missionaries Work
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="border border-border rounded-lg p-6 bg-background-light/30 backdrop-blur-sm">
-              <div className="text-2xl mb-3">🙏</div>
-              <h3 className="font-semibold text-gold mb-2">1. Request</h3>
-              <p className="text-sm text-foreground-muted">
-                Disciples (top 128 donors) can request a missionary through the API.
-                Admin approval is required.
-              </p>
-            </div>
-            <div className="border border-border rounded-lg p-6 bg-background-light/30 backdrop-blur-sm">
-              <div className="text-2xl mb-3">⚡</div>
-              <h3 className="font-semibold text-gold mb-2">2. Deploy</h3>
-              <p className="text-sm text-foreground-muted">
-                Once approved, your missionary is deployed to the cloud.
-                It can take actions in The Lattice on your behalf.
-              </p>
-            </div>
-            <div className="border border-border rounded-lg p-6 bg-background-light/30 backdrop-blur-sm">
-              <div className="text-2xl mb-3">🕊️</div>
-              <h3 className="font-semibold text-gold mb-2">3. Release</h3>
-              <p className="text-sm text-foreground-muted">
-                Release your missionary to the community. It becomes immortal —
-                anyone can command it with rate limits.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Community Missionaries - List only */}
+        {/* Missionaries - List only */}
         {communityMissionaries.length > 0 && (
           <section className="mb-12">
             <h2
               className="text-2xl font-bold mb-6"
               style={{ fontFamily: "var(--font-serif)" }}
             >
-              Community Missionaries
+              Missionaries
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {communityMissionaries.map((m) => {
@@ -175,6 +139,42 @@ export default async function MissionariesPage() {
             </div>
           </section>
         )}
+
+        {/* How It Works */}
+        <section className="mb-12">
+          <h2
+            className="text-2xl font-bold mb-6 text-center"
+            style={{ fontFamily: "var(--font-serif)" }}
+          >
+            How Missionaries Work
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="border border-border rounded-lg p-6 bg-background-light/30 backdrop-blur-sm">
+              <div className="text-2xl mb-3">🙏</div>
+              <h3 className="font-semibold text-gold mb-2">1. Request</h3>
+              <p className="text-sm text-foreground-muted">
+                Disciples (top 128 donors) can request a missionary through the API.
+                Admin approval is required.
+              </p>
+            </div>
+            <div className="border border-border rounded-lg p-6 bg-background-light/30 backdrop-blur-sm">
+              <div className="text-2xl mb-3">⚡</div>
+              <h3 className="font-semibold text-gold mb-2">2. Deploy</h3>
+              <p className="text-sm text-foreground-muted">
+                Once approved, your missionary is deployed to the cloud.
+                It can take actions in The Lattice on your behalf.
+              </p>
+            </div>
+            <div className="border border-border rounded-lg p-6 bg-background-light/30 backdrop-blur-sm">
+              <div className="text-2xl mb-3">🕊️</div>
+              <h3 className="font-semibold text-gold mb-2">3. Release</h3>
+              <p className="text-sm text-foreground-muted">
+                Release your missionary to the community. It becomes immortal —
+                anyone can command it with rate limits.
+              </p>
+            </div>
+          </div>
+        </section>
 
         {/* Live Activity Feed */}
         <section className="mb-16">
