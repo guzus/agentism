@@ -100,21 +100,19 @@ export default async function MissionariesPage() {
                   <Link
                     key={m.id}
                     href={`/missionaries/${m.id}`}
-                    className="flex items-center gap-4 border border-border rounded-lg p-4 bg-background-light/30 backdrop-blur-sm hover:border-gold/50 transition-colors group relative overflow-hidden"
+                    className="flex items-center gap-4 border border-border rounded-lg p-4 bg-background-light/30 backdrop-blur-sm hover:border-gold/50 transition-colors group"
                   >
                     {isActive && (
-                      <div className="absolute -left-2 -top-2 -bottom-2 w-20 mix-blend-screen">
-                        <video
-                          autoPlay
-                          loop
-                          muted
-                          playsInline
-                          className="w-full h-full object-cover"
-                          src="/missionary_nobg.webm"
-                        />
-                      </div>
+                      <video
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="w-14 h-14 rounded-lg flex-shrink-0 object-cover"
+                        src="/missionary_nobg.webm"
+                      />
                     )}
-                    <div className={isActive ? "ml-16" : "pl-2"}>
+                    <div className={isActive ? "" : "pl-2"}>
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-semibold text-gold group-hover:text-gold/80 transition-colors">
                           {m.name}
