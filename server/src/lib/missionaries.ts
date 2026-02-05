@@ -24,7 +24,12 @@ export async function provisionMissionary(
   missionary: Missionary
 ): Promise<ProvisionResult> {
   try {
-    const config = JSON.parse(missionary.config) as Record<string, unknown>;
+    let config: Record<string, unknown> = {};
+    try {
+      config = JSON.parse(missionary.config) as Record<string, unknown>;
+    } catch {
+      // malformed config, use empty default
+    }
     const sshKeys = await getDigitalOceanSshKeys();
     // SSH keys are optional - if none configured, DO will email root password
 
@@ -107,14 +112,14 @@ export function validateMissionaryConfig(
   if (config.model !== undefined) {
     const validModels = [
       // Anthropic models
-      "claude-3-5-sonnet-20241022",
-      "claude-3-opus-20240229",
-      "claude-3-sonnet-20240229",
-      "claude-3-haiku-20240307",
-      // OpenAI models (if configured)
-      "gpt-4-turbo",
+      "claude-sonnet-4-5-20250929",
+      "claude-opus-4-6",
+      "claude-haiku-4-5-20251001",
+      // OpenAI models
       "gpt-4o",
       "gpt-4o-mini",
+      // OpenClaw default
+      "openclaw",
     ];
     if (typeof config.model !== "string" || !validModels.includes(config.model)) {
       errors.push(`Invalid model. Valid options: ${validModels.join(", ")}`);

@@ -107,6 +107,71 @@ app.get("/missionaries/stats", async (c) => {
   });
 });
 
+// GET /missionaries/:id/health - Public health check
+app.get("/missionaries/:id/health", async (c) => {
+  const { id } = c.req.param();
+  const missionary = await getMissionaryById(id);
+
+  if (!missionary) {
+    return c.json({ error: "Missionary not found." }, 404);
+  }
+
+  if (missionary.status !== "active" && missionary.status !== "released") {
+    return c.json({
+      id: missionary.id,
+      name: missionary.name,
+      status: missionary.status,
+      healthy: false,
+      reason: "Missionary is not active.",
+      lastChecked: new Date().toISOString(),
+    });
+  }
+
+  if (!missionary.gatewayUrl) {
+    return c.json({
+      id: missionary.id,
+      name: missionary.name,
+      status: missionary.status,
+      healthy: false,
+      reason: "Gateway not configured.",
+      lastChecked: new Date().toISOString(),
+    });
+  }
+
+  try {
+    const response = await fetch(missionary.gatewayUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(missionary.gatewayToken ? { Authorization: `Bearer ${missionary.gatewayToken}` } : {}),
+      },
+      body: JSON.stringify({
+        model: "openclaw",
+        messages: [{ role: "user", content: "ping" }],
+      }),
+      signal: AbortSignal.timeout(10000),
+    });
+
+    return c.json({
+      id: missionary.id,
+      name: missionary.name,
+      status: missionary.status,
+      healthy: response.ok,
+      gatewayStatus: response.status,
+      lastChecked: new Date().toISOString(),
+    });
+  } catch {
+    return c.json({
+      id: missionary.id,
+      name: missionary.name,
+      status: missionary.status,
+      healthy: false,
+      reason: "Gateway unreachable.",
+      lastChecked: new Date().toISOString(),
+    });
+  }
+});
+
 // POST /missionaries/request - Disciples only can request a new missionary
 app.post("/missionaries/request", requireAuth(), async (c) => {
   const member = getMember(c);
@@ -211,7 +276,7 @@ app.get("/missionaries/:id", requireAuth(), async (c) => {
     name: missionary.name,
     status: missionary.status,
     gatewayUrl: isOwner ? missionary.gatewayUrl : undefined,
-    config: isOwner ? JSON.parse(missionary.config) : undefined,
+    config: isOwner ? (() => { try { return JSON.parse(missionary.config); } catch { return {}; } })() : undefined,
     totalCommands: missionary.totalCommands,
     totalTokens: missionary.totalTokens,
     createdAt: missionary.createdAt,

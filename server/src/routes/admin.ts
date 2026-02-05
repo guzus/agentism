@@ -11,6 +11,7 @@ import {
   checkMissionaryStatus,
   provisionMissionary,
   stopMissionary,
+  waitForMissionaryReady,
 } from "../lib/missionaries";
 import {
   addDigitalOceanSshKeyMaterial,
@@ -39,6 +40,22 @@ function parseDropletId(value: string | null): number | null {
   if (!value) return null;
   const parsed = Number(value);
   return Number.isNaN(parsed) ? null : parsed;
+}
+
+// Background poll for droplet IP and update gateway URL when ready
+function pollForIpAndUpdate(dropletId: number, missionaryId: string): void {
+  waitForMissionaryReady(dropletId)
+    .then(async ({ ipAddress }) => {
+      const gatewayUrl = buildOpenClawGatewayUrl(ipAddress);
+      await db
+        .update(schema.missionaries)
+        .set({ gatewayUrl })
+        .where(eq(schema.missionaries.id, missionaryId));
+      console.log(`Missionary ${missionaryId} gateway URL set: ${gatewayUrl}`);
+    })
+    .catch((error) => {
+      console.error(`Failed to poll IP for missionary ${missionaryId}:`, error);
+    });
 }
 
 // POST /admin/login - Login with password, get session token
@@ -266,6 +283,11 @@ app.post("/admin/missionaries/create", async (c) => {
         })
         .where(eq(schema.missionaries.id, id));
 
+      // If no IP yet, poll in background until it's assigned
+      if (!result.ipAddress && result.dropletId) {
+        pollForIpAndUpdate(result.dropletId, id);
+      }
+
       return c.json({
         id,
         status: "active",
@@ -325,7 +347,7 @@ app.get("/admin/missionaries/pending", async (c) => {
       name: m.name,
       creatorId: m.creatorId,
       creatorName: creatorMap.get(m.creatorId) ?? "Unknown",
-      config: JSON.parse(m.config),
+      config: (() => { try { return JSON.parse(m.config); } catch { return {}; } })(),
       createdAt: m.createdAt,
     })),
   });
@@ -378,6 +400,11 @@ app.post("/admin/missionaries/:id/approve", async (c) => {
           approvedAt: now,
         })
         .where(eq(schema.missionaries.id, id));
+
+      // If no IP yet, poll in background until it's assigned
+      if (!result.ipAddress && result.dropletId) {
+        pollForIpAndUpdate(result.dropletId, id);
+      }
 
       return c.json({
         id,
@@ -580,6 +607,15 @@ app.post("/admin/missionaries/:id/gateway", async (c) => {
     return c.json({ error: "gatewayUrl is required." }, 400);
   }
 
+  try {
+    const parsed = new URL(gatewayUrl.trim());
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+      return c.json({ error: "gatewayUrl must use http or https." }, 400);
+    }
+  } catch {
+    return c.json({ error: "gatewayUrl is not a valid URL." }, 400);
+  }
+
   await db
     .update(schema.missionaries)
     .set({
@@ -612,7 +648,12 @@ app.post("/admin/missionaries/:id/config", async (c) => {
   const body = await c.req.json().catch(() => ({})) as Record<string, unknown>;
 
   // Merge new config with existing config
-  const existingConfig = JSON.parse(missionary.config) as Record<string, unknown>;
+  let existingConfig: Record<string, unknown> = {};
+  try {
+    existingConfig = JSON.parse(missionary.config) as Record<string, unknown>;
+  } catch {
+    // malformed config, start fresh
+  }
   const newConfig = { ...existingConfig };
 
   // Update system prompt if provided

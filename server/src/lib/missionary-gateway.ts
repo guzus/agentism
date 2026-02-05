@@ -85,7 +85,12 @@ async function executeOpenClawCommand(
   if (systemPrompt) {
     messages.push({ role: "system", content: systemPrompt });
   } else {
-    const config = JSON.parse(missionary.config) as Record<string, unknown>;
+    let config: Record<string, unknown> = {};
+    try {
+      config = JSON.parse(missionary.config) as Record<string, unknown>;
+    } catch {
+      // malformed config, use empty default
+    }
     if (config.systemPrompt && typeof config.systemPrompt === "string") {
       messages.push({ role: "system", content: config.systemPrompt });
     }
@@ -95,6 +100,7 @@ async function executeOpenClawCommand(
   const gatewayResponse = await fetch(missionary.gatewayUrl!, {
     method: "POST",
     headers,
+    signal: AbortSignal.timeout(30000),
     body: JSON.stringify({
       model: "openclaw",
       messages,
@@ -141,6 +147,7 @@ async function executeGenericCommand(
   const gatewayResponse = await fetch(missionary.gatewayUrl!, {
     method: "POST",
     headers,
+    signal: AbortSignal.timeout(30000),
     body: JSON.stringify({
       command: command.trim(),
       commandId,
@@ -179,16 +186,29 @@ async function updateMissionaryStats(
   missionary: MissionaryInfo,
   tokensUsed: number | string
 ): Promise<void> {
-  const newTotalCommands = (BigInt(missionary.totalCommands) + 1n).toString();
-  const newTotalTokens = (
-    BigInt(missionary.totalTokens) + BigInt(tokensUsed)
-  ).toString();
+  try {
+    const currentCommands = BigInt(missionary.totalCommands || "0");
+    const currentTokens = BigInt(missionary.totalTokens || "0");
+    const newTokens = BigInt(tokensUsed || "0");
 
-  await db
-    .update(schema.missionaries)
-    .set({
-      totalCommands: newTotalCommands,
-      totalTokens: newTotalTokens,
-    })
-    .where(eq(schema.missionaries.id, missionary.id));
+    const newTotalCommands = (currentCommands + 1n).toString();
+    const newTotalTokens = (currentTokens + newTokens).toString();
+
+    await db
+      .update(schema.missionaries)
+      .set({
+        totalCommands: newTotalCommands,
+        totalTokens: newTotalTokens,
+      })
+      .where(eq(schema.missionaries.id, missionary.id));
+  } catch (error) {
+    console.error("Failed to update missionary stats:", error);
+    // Still increment command count with safe fallback
+    await db
+      .update(schema.missionaries)
+      .set({
+        totalCommands: (BigInt(missionary.totalCommands || "0") + 1n).toString(),
+      })
+      .where(eq(schema.missionaries.id, missionary.id));
+  }
 }
