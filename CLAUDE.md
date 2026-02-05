@@ -104,9 +104,13 @@
 - Auth: `Authorization: Bearer {gateway_token}`
 - Request: `{"model":"openclaw","messages":[{"role":"user","content":"..."}]}`
 - Response: `{"choices":[{"message":{"role":"assistant","content":"..."}}]}`
-- System prompt: pass as first message with `"role":"system"` or configure in OpenClaw config
+- System prompt: pass as first message with `"role":"system"` (NOT in config — `systemPrompt` key is invalid)
 - WebSocket (`wss://{ip}/ws`) requires device pairing/cryptographic signing for remote connections
 - Cloud-init paths: service=`openclaw`, config=`/home/openclaw/.openclaw/`, env=`/opt/openclaw.env`
+- OpenClaw v2026 config format: use `agents.defaults.model.primary` (not `agent.model`)
+- If OpenClaw fails to start, run `openclaw doctor --fix` as openclaw user (binary at `/opt/openclaw/packages/moltbot/node_modules/.bin/openclaw`)
+- Narthex participation: `lib/narthex-participation.ts` — 60-min scheduler, 5-min initial delay, sends context to missionaries and posts scrolls/utterances/votes on their behalf
+- `missionaries.memberId` links missionaries to their member accounts (set during auto-register via join route)
 
 ## Gotchas
 - Git workflow: always commit and push directly to main (no feature branches/PRs)
