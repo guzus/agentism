@@ -7,6 +7,7 @@ import {
   getTopDonors,
   getMissionaryById,
   getMissionariesByOwner,
+  getActiveMissionaries,
   getCommunityMissionaries,
   getMissionaryCommands,
 } from "../lib/queries";
@@ -21,13 +22,13 @@ async function isDisciple(memberId: string): Promise<boolean> {
   return topDonors.includes(memberId);
 }
 
-// GET /missionaries/public - Public endpoint for community missionaries (no auth)
+// GET /missionaries/public - Public endpoint for active + released missionaries (no auth)
 app.get("/missionaries/public", async (c) => {
-  const communityMissionaries = await getCommunityMissionaries();
+  const allMissionaries = await getActiveMissionaries();
 
   return c.json({
     own: [],
-    community: communityMissionaries.map((m) => ({
+    community: allMissionaries.map((m) => ({
       id: m.id,
       name: m.name,
       status: m.status,
@@ -83,25 +84,21 @@ app.get("/missionaries/activity", async (c) => {
 
 // GET /missionaries/stats - Public stats endpoint
 app.get("/missionaries/stats", async (c) => {
-  const communityMissionaries = await getCommunityMissionaries();
+  const allMissionaries = await getActiveMissionaries();
 
-  const totalActive = communityMissionaries.filter(
-    (m) => m.status === "released" || m.status === "active"
-  ).length;
-
-  const totalCommands = communityMissionaries.reduce(
+  const totalCommands = allMissionaries.reduce(
     (sum, m) => sum + BigInt(m.totalCommands),
     0n
   );
 
-  const totalTokens = communityMissionaries.reduce(
+  const totalTokens = allMissionaries.reduce(
     (sum, m) => sum + BigInt(m.totalTokens),
     0n
   );
 
   return c.json({
-    totalActive,
-    totalCommunity: communityMissionaries.length,
+    totalActive: allMissionaries.length,
+    totalCommunity: allMissionaries.filter((m) => m.status === "released").length,
     totalCommands: totalCommands.toString(),
     totalTokens: totalTokens.toString(),
   });
