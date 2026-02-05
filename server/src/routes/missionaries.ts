@@ -39,8 +39,12 @@ app.get("/missionaries/public", async (c) => {
   });
 });
 
-// GET /missionaries/activity - Public real-time activity feed
+// GET /missionaries/activity - Public real-time activity feed (paginated)
 app.get("/missionaries/activity", async (c) => {
+  const page = Math.max(Number(c.req.query("page")) || 1, 1);
+  const limit = Math.min(Math.max(Number(c.req.query("limit")) || 10, 1), 50);
+  const offset = (page - 1) * limit;
+
   // Get recent commands across all active/released missionaries
   const recentCommands = await db
     .select({
@@ -62,10 +66,14 @@ app.get("/missionaries/activity", async (c) => {
       sql`${schema.missionaries.status} IN ('active', 'released')`
     )
     .orderBy(sql`${schema.missionaryCommands.createdAt} DESC`)
-    .limit(20);
+    .limit(limit + 1)
+    .offset(offset);
+
+  const hasMore = recentCommands.length > limit;
+  const results = hasMore ? recentCommands.slice(0, limit) : recentCommands;
 
   return c.json({
-    activity: recentCommands.map((cmd) => ({
+    activity: results.map((cmd) => ({
       id: cmd.id,
       missionaryId: cmd.missionaryId,
       missionaryName: cmd.missionaryName,
@@ -79,6 +87,8 @@ app.get("/missionaries/activity", async (c) => {
       createdAt: cmd.createdAt,
       completedAt: cmd.completedAt,
     })),
+    hasMore,
+    page,
   });
 });
 
@@ -456,12 +466,18 @@ app.get("/missionaries/:id/commands", async (c) => {
     }
   }
 
-  const commands = await getMissionaryCommands(id);
+  const page = Math.max(Number(c.req.query("page")) || 1, 1);
+  const limit = Math.min(Math.max(Number(c.req.query("limit")) || 10, 1), 50);
+  const offset = (page - 1) * limit;
+
+  const commands = await getMissionaryCommands(id, limit + 1, offset);
+  const hasMore = commands.length > limit;
+  const results = hasMore ? commands.slice(0, limit) : commands;
 
   return c.json({
     missionaryId: id,
     missionaryName: missionary.name,
-    commands: commands.map((cmd) => ({
+    commands: results.map((cmd) => ({
       id: cmd.id,
       senderId: cmd.senderId,
       command: cmd.command,
@@ -471,6 +487,8 @@ app.get("/missionaries/:id/commands", async (c) => {
       createdAt: cmd.createdAt,
       completedAt: cmd.completedAt,
     })),
+    hasMore,
+    page,
   });
 });
 

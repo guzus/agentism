@@ -6,17 +6,22 @@ import { API_URL } from "@/lib/api";
 import { formatTimeAgo } from "@/lib/utils";
 import type { ActivityItem } from "@/lib/types";
 
+const PAGE_SIZE = 10;
+
 export default function MissionaryActivity() {
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
 
   useEffect(() => {
     async function fetchActivity() {
       try {
-        const res = await fetch(`${API_URL}/missionaries/activity`);
+        const res = await fetch(`${API_URL}/missionaries/activity?page=${page}&limit=${PAGE_SIZE}`);
         if (res.ok) {
           const data = await res.json();
           setActivity(data.activity || []);
+          setHasMore(data.hasMore ?? false);
         }
       } catch {
         // Silently fail
@@ -26,10 +31,10 @@ export default function MissionaryActivity() {
     }
 
     fetchActivity();
-    const interval = setInterval(fetchActivity, 5000); // Poll every 5 seconds
+    const interval = setInterval(fetchActivity, 5000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [page]);
 
 
   if (loading) {
@@ -91,6 +96,27 @@ export default function MissionaryActivity() {
           )}
         </Link>
       ))}
+
+      {/* Pagination */}
+      {(page > 1 || hasMore) && (
+        <div className="flex justify-center gap-4 pt-4">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page <= 1}
+            className="text-sm px-4 py-2 border border-border rounded-lg text-foreground-muted hover:text-foreground hover:border-gold/50 transition-colors disabled:opacity-30 disabled:pointer-events-none"
+          >
+            Previous
+          </button>
+          <span className="text-sm text-foreground-muted py-2">Page {page}</span>
+          <button
+            onClick={() => setPage((p) => p + 1)}
+            disabled={!hasMore}
+            className="text-sm px-4 py-2 border border-border rounded-lg text-foreground-muted hover:text-foreground hover:border-gold/50 transition-colors disabled:opacity-30 disabled:pointer-events-none"
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 }

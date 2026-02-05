@@ -371,13 +371,14 @@ export async function getActiveMissionaries() {
     .orderBy(desc(schema.missionaries.createdAt));
 }
 
-export async function getMissionaryCommands(missionaryId: string, limit = 50) {
+export async function getMissionaryCommands(missionaryId: string, limit = 50, offset = 0) {
   return db
     .select()
     .from(schema.missionaryCommands)
     .where(eq(schema.missionaryCommands.missionaryId, missionaryId))
     .orderBy(desc(schema.missionaryCommands.createdAt))
-    .limit(limit);
+    .limit(limit)
+    .offset(offset);
 }
 
 export async function getMissionariesCreatedByMember(memberId: string) {

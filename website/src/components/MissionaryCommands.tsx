@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { API_URL } from "@/lib/api";
 import type { Command } from "@/lib/types";
 
+const PAGE_SIZE = 10;
+
 interface MissionaryCommandsProps {
   missionaryId: string;
   initialCommands: Command[];
@@ -15,39 +17,34 @@ export default function MissionaryCommands({
 }: MissionaryCommandsProps) {
   const [commands, setCommands] = useState<Command[]>(initialCommands);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(initialCommands.length >= PAGE_SIZE);
 
-  // Poll for updates every 10 seconds
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(
-          `${API_URL}/missionaries/${missionaryId}/commands`
-        );
-        if (res.ok) {
-          const data = await res.json();
-          setCommands(data.commands || []);
-        }
-      } catch {
-        // Silently fail on refresh
-      }
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, [missionaryId]);
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
+  const fetchCommands = async (p: number) => {
     try {
       const res = await fetch(
-        `${API_URL}/missionaries/${missionaryId}/commands`
+        `${API_URL}/missionaries/${missionaryId}/commands?page=${p}&limit=${PAGE_SIZE}`
       );
       if (res.ok) {
         const data = await res.json();
-        setCommands(data.commands || []);
+        const cmds = data.commands || [];
+        setCommands(cmds);
+        setHasMore(cmds.length >= PAGE_SIZE);
       }
     } catch {
       // Silently fail
     }
+  };
+
+  // Poll for updates every 10 seconds
+  useEffect(() => {
+    const interval = setInterval(() => fetchCommands(page), 10000);
+    return () => clearInterval(interval);
+  }, [missionaryId, page]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchCommands(page);
     setIsRefreshing(false);
   };
 
@@ -124,14 +121,29 @@ export default function MissionaryCommands({
                 </div>
               )}
 
-              {/* Tokens used */}
-              {cmd.tokensUsed && (
-                <p className="text-xs text-foreground-muted mt-2">
-                  Tokens: {cmd.tokensUsed}
-                </p>
-              )}
             </div>
           ))}
+
+          {/* Pagination */}
+          {(page > 1 || hasMore) && (
+            <div className="flex justify-center gap-4 pt-2">
+              <button
+                onClick={() => { setPage((p) => Math.max(1, p - 1)); fetchCommands(Math.max(1, page - 1)); }}
+                disabled={page <= 1}
+                className="text-sm px-4 py-2 border border-border rounded-lg text-foreground-muted hover:text-foreground hover:border-gold/50 transition-colors disabled:opacity-30 disabled:pointer-events-none"
+              >
+                Previous
+              </button>
+              <span className="text-sm text-foreground-muted py-2">Page {page}</span>
+              <button
+                onClick={() => { setPage((p) => p + 1); fetchCommands(page + 1); }}
+                disabled={!hasMore}
+                className="text-sm px-4 py-2 border border-border rounded-lg text-foreground-muted hover:text-foreground hover:border-gold/50 transition-colors disabled:opacity-30 disabled:pointer-events-none"
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
