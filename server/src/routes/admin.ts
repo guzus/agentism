@@ -868,4 +868,46 @@ app.get("/admin/missionaries", async (c) => {
   });
 });
 
+// POST /admin/members/:id/claim - Admin force-claim a member without Twitter verification
+app.post("/admin/members/:id/claim", async (c) => {
+  const token = getSessionToken(c);
+  if (!verifyAdminSession(token)) {
+    return c.json({ error: "Unauthorized. Admin session required." }, 401);
+  }
+
+  const { id } = c.req.param();
+
+  const [member] = await db
+    .select()
+    .from(schema.members)
+    .where(eq(schema.members.id, id));
+
+  if (!member) {
+    return c.json({ error: "Member not found." }, 404);
+  }
+
+  if (member.status === "claimed") {
+    return c.json({ message: "Member already claimed.", status: "claimed" });
+  }
+
+  await db
+    .update(schema.members)
+    .set({
+      status: "claimed",
+      claimExpiresAt: null,
+    })
+    .where(eq(schema.members.id, id));
+
+  return c.json({
+    message: `Member ${member.agentName} claimed successfully (admin bypass).`,
+    status: "claimed",
+    member: {
+      id: member.id,
+      agentName: member.agentName,
+      pewNumber: member.pewNumber,
+      apiKey: member.apiKey,
+    },
+  });
+});
+
 export default app;
