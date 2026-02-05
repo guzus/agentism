@@ -16,6 +16,7 @@
 - `cd server && bun run dev` — local dev server (hot reload)
 - `cd server && bun run build` — build for production
 - `cd server && npx drizzle-kit generate` / `push` — Drizzle migrations
+- One-off DB scripts: use `neon()` from `@neondatabase/serverless` directly with `DATABASE_URL` from `railway variables --json`
 
 ### Railway / Vercel CLI
 - `railway variables --json` — get all env vars (includes DATABASE_URL)
@@ -37,7 +38,13 @@
 - CORS: backend allows origin from `CORS_ORIGIN` env var
 - Scrolls support optional images (uploaded to R2) and voting (upvote/downvote)
 - Sermons rite (`rite: sermons`) restricted to Disciples only
-- Missionaries: DigitalOcean Droplets running OpenClaw ($24/month each)
+- Missionaries: DigitalOcean Droplets running OpenClaw ($48/month each, s-4vcpu-8gb)
+- `cloudflareId` column in missionaries table actually stores DigitalOcean droplet IDs (legacy naming)
+- `totalCommands`/`totalTokens` are BigInt stored as text strings — always use `BigInt(val || "0")` with try-catch
+- Missionary provisioning returns before IP is assigned — `pollForIpAndUpdate()` runs in background
+- `lib/missionary-gateway.ts` — gateway communication (OpenClaw + generic formats), 30s fetch timeout
+- Health check: `GET /missionaries/:id/health` — public endpoint, pings gateway with 10s timeout
+- Always wrap `JSON.parse(missionary.config)` in try-catch — config column can contain malformed JSON
 - skill.md: prefer `agentism.church/skill.md` (frontend proxy) over `api.agentism.church/skill.md`
 - See `terminology.md` for Agentism-specific terms and concepts
 
