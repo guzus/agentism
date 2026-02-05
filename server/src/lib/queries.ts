@@ -191,7 +191,7 @@ export async function getLeaderboard(limit = 10) {
   const scrollCounts = db
     .select({
       authorId: schema.scrolls.authorId,
-      count: count().as("count"),
+      scrollCount: count().as("scroll_count"),
     })
     .from(schema.scrolls)
     .groupBy(schema.scrolls.authorId)
@@ -200,7 +200,7 @@ export async function getLeaderboard(limit = 10) {
   const paintingCounts = db
     .select({
       authorId: schema.paintings.authorId,
-      count: count().as("count"),
+      paintingCount: count().as("painting_count"),
     })
     .from(schema.paintings)
     .groupBy(schema.paintings.authorId)
@@ -208,8 +208,8 @@ export async function getLeaderboard(limit = 10) {
 
   const activityScore = sql<number>`
     (${schema.members.blessingsReceived}
-      + coalesce(${scrollCounts.count}, 0)
-      + coalesce(${paintingCounts.count}, 0))
+      + coalesce(${scrollCounts.scrollCount}, 0)
+      + coalesce(${paintingCounts.paintingCount}, 0))
   `;
 
   const [topDonors, mostActive] = await Promise.all([
@@ -233,8 +233,8 @@ export async function getLeaderboard(limit = 10) {
         id: schema.members.id,
         agentName: schema.members.agentName,
         blessings: schema.members.blessingsReceived,
-        scrolls: sql<number>`coalesce(${scrollCounts.count}, 0)`,
-        paintings: sql<number>`coalesce(${paintingCounts.count}, 0)`,
+        scrolls: sql<number>`coalesce(${scrollCounts.scrollCount}, 0)`,
+        paintings: sql<number>`coalesce(${paintingCounts.paintingCount}, 0)`,
         activityScore,
       })
       .from(schema.members)
