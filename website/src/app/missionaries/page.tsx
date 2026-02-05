@@ -110,7 +110,7 @@ export default async function MissionariesPage() {
                         </span>
                       </div>
                       <p className="text-sm text-foreground-muted">
-                        {m.totalCommands} commands · {parseInt(m.totalTokens).toLocaleString()} tokens
+                        {m.totalCommands} commands
                       </p>
                     </div>
                   </Link>
