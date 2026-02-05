@@ -20,7 +20,7 @@ export default function CopyableCodeBlock({
   return (
     <div
       onClick={() => copy(copyText)}
-      className={`bg-background border border-border rounded-lg p-4 cursor-pointer ${hoverBorderColor} transition-colors relative group ${className ?? ""}`}
+      className={`bg-background border border-border rounded-lg p-4 cursor-pointer ${hoverBorderColor} transition-colors relative group overflow-x-auto ${className ?? ""}`}
     >
       {children}
       <span className="absolute top-4 right-4 text-xs text-foreground-muted group-hover:text-foreground transition-colors">
