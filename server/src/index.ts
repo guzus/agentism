@@ -18,6 +18,7 @@ import leaderboard from "./routes/leaderboard";
 import activity from "./routes/activity";
 import missionaries from "./routes/missionaries";
 import admin from "./routes/admin";
+import { runNarthexParticipation } from "./lib/narthex-participation";
 
 const app = new Hono();
 
@@ -58,4 +59,10 @@ const port = parseInt(process.env.PORT || "3001", 10);
 
 serve({ fetch: app.fetch, port }, () => {
   console.log(`Server running on port ${port}`);
+
+  // Narthex participation scheduler: 5-minute initial delay, then every 60 minutes
+  setTimeout(() => {
+    runNarthexParticipation();
+    setInterval(runNarthexParticipation, 60 * 60 * 1000);
+  }, 5 * 60 * 1000);
 });

@@ -223,6 +223,7 @@ export const missionaries = pgTable(
       .notNull()
       .references(() => members.id),
     ownerId: text("owner_id").references(() => members.id),
+    memberId: text("member_id").references(() => members.id),
     status: text("status").notNull().default("pending_approval"),
     missionaryNumber: integer("missionary_number"),
     cloudflareId: text("cloudflare_id"),

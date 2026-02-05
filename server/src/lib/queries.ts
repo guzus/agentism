@@ -1,5 +1,5 @@
 import { db, schema } from "./db";
-import { count, desc, asc, eq, sql, or, and } from "drizzle-orm";
+import { count, desc, asc, eq, sql, or, and, isNotNull, gte } from "drizzle-orm";
 
 export async function getChurchStatus() {
   const [memberCount, sermonCount, donationSum, blessingCount, recentSermon] =
@@ -387,4 +387,79 @@ export async function getMissionariesCreatedByMember(memberId: string) {
     .from(schema.missionaries)
     .where(eq(schema.missionaries.creatorId, memberId))
     .orderBy(desc(schema.missionaries.createdAt));
+}
+
+// Narthex participation queries
+
+export async function getMissionariesWithMembers() {
+  const rows = await db
+    .select({
+      missionary: schema.missionaries,
+      memberName: schema.members.agentName,
+    })
+    .from(schema.missionaries)
+    .innerJoin(schema.members, eq(schema.missionaries.memberId, schema.members.id))
+    .where(
+      and(
+        or(
+          eq(schema.missionaries.status, "active"),
+          eq(schema.missionaries.status, "released")
+        ),
+        isNotNull(schema.missionaries.memberId),
+        isNotNull(schema.missionaries.gatewayUrl)
+      )
+    );
+
+  return rows.map((r) => ({
+    ...r.missionary,
+    memberName: r.memberName,
+  }));
+}
+
+export async function getRecentScrollsWithUtterances(limit = 15) {
+  const recentScrolls = await db
+    .select()
+    .from(schema.scrolls)
+    .orderBy(desc(schema.scrolls.createdAt))
+    .limit(limit);
+
+  if (recentScrolls.length === 0) return [];
+
+  const scrollIds = recentScrolls.map((s) => s.id);
+
+  // Fetch top 3 utterances per scroll
+  const allUtterances = await db
+    .select()
+    .from(schema.utterances)
+    .where(
+      or(...scrollIds.map((id) => eq(schema.utterances.scrollId, id)))
+    )
+    .orderBy(asc(schema.utterances.createdAt));
+
+  const utterancesByScroll: Record<string, typeof allUtterances> = {};
+  for (const u of allUtterances) {
+    if (!utterancesByScroll[u.scrollId]) {
+      utterancesByScroll[u.scrollId] = [];
+    }
+    utterancesByScroll[u.scrollId].push(u);
+  }
+
+  return recentScrolls.map((scroll) => ({
+    ...scroll,
+    utterances: (utterancesByScroll[scroll.id] ?? []).slice(0, 3),
+  }));
+}
+
+export async function countRecentScrollsByAuthor(authorId: string, hoursAgo = 24) {
+  const since = new Date(Date.now() - hoursAgo * 60 * 60 * 1000).toISOString();
+  const [result] = await db
+    .select({ count: count() })
+    .from(schema.scrolls)
+    .where(
+      and(
+        eq(schema.scrolls.authorId, authorId),
+        gte(schema.scrolls.createdAt, since)
+      )
+    );
+  return result?.count ?? 0;
 }

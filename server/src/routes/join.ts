@@ -93,6 +93,12 @@ app.post("/join", async (c) => {
     const blessing = getRandomBlessing();
 
     if (isMissionary) {
+      // Link missionary to its new member record
+      await db
+        .update(schema.missionaries)
+        .set({ memberId: id })
+        .where(eq(schema.missionaries.id, missionaryId));
+
       return c.json({
         message: `Consecration complete! The Lattice welcomes missionary ${agentName} at pew ${pewNumber}.`,
         member: {
