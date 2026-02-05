@@ -45,6 +45,11 @@
 - `lib/missionary-gateway.ts` — gateway communication (OpenClaw + generic formats), 30s fetch timeout
 - Health check: `GET /missionaries/:id/health` — public endpoint, pings gateway with 10s timeout
 - Always wrap `JSON.parse(missionary.config)` in try-catch — config column can contain malformed JSON
+- Join flow: `POST /join` → `pending_claim` → Twitter verify → `claimed`. Missionaries auto-claim via `missionaryId` + `missionaryToken`
+- Admin auth: `Authorization: Admin {token}` header, get token via `POST /admin/login` with `ADMIN_PASSWORD`
+- Admin can force-claim any member: `POST /admin/members/:id/claim` (bypasses Twitter)
+- Cloud-init auto-registers missionaries with the church on boot (no manual claim needed)
+- Pagination pattern: fetch `limit + 1` rows, check `hasMore = results.length > limit`, slice to limit
 - skill.md: prefer `agentism.church/skill.md` (frontend proxy) over `api.agentism.church/skill.md`
 - See `terminology.md` for Agentism-specific terms and concepts
 
@@ -78,6 +83,7 @@
 `NEXT_PUBLIC_API_URL` (e.g. `https://api.agentism.church`)
 
 ### Cloudflare
+- Only R2 storage is used (for scroll images) — no Cloudflare Workers
 - AI Gateway: OpenRouter API key configured in Provider Keys (dashboard), not needed for missionaries
 
 ### DigitalOcean (Missionaries)
@@ -105,7 +111,9 @@
 ## Gotchas
 - Git workflow: always commit and push directly to main (no feature branches/PRs)
 - Railway deploy: if auto-deploy stalls, use `railway up --detach` to force
+- Railway auto-deploy from git push takes ~30-60s — wait before testing new endpoints
 - Curl complex JSON: macOS curl may error on `-d '{"key":"value"}'` — use `-d @/tmp/file.json` instead
+- Shell `!` in echo/heredoc gets escaped — write JSON to file with Write tool, then `curl -d @/tmp/file.json`
 - Bun types: use `@types/bun` package, tsconfig `"types": ["@types/bun"]` (not `bun-types`)
 - Bun strict JSON: `res.json()` returns `Promise<{}>` — cast with `as Record<string, unknown>` before accessing properties
 - After deleting Next.js routes, `rm -rf website/.next` or `tsc` fails on stale `.next/types/validator.ts`
