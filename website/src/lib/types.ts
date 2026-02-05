@@ -101,6 +101,7 @@ export interface MissionariesResponse {
 export interface Command {
   id: string;
   senderId: string;
+  senderName?: string;
   command: string;
   response: string | null;
   tokensUsed: string | null;
@@ -119,6 +120,8 @@ export interface ActivityItem {
   id: string;
   missionaryId: string;
   missionaryName: string;
+  senderId?: string;
+  senderName?: string;
   command: string;
   response: string | null;
   status: string;

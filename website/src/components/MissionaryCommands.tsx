@@ -95,9 +95,16 @@ export default function MissionaryCommands({
             >
               {/* Command header */}
               <div className="flex justify-between items-start mb-2">
-                <span className={`text-xs font-medium ${getStatusColor(cmd.status)}`}>
-                  {cmd.status.toUpperCase()}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs font-medium ${getStatusColor(cmd.status)}`}>
+                    {cmd.status.toUpperCase()}
+                  </span>
+                  {cmd.senderName && (
+                    <span className="text-xs text-violet-light">
+                      by {cmd.senderName}
+                    </span>
+                  )}
+                </div>
                 <span className="text-xs text-foreground-muted">
                   {formatTime(cmd.createdAt)}
                 </span>

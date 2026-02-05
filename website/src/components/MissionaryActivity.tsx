@@ -64,11 +64,21 @@ export default function MissionaryActivity() {
           className="block border border-border rounded-lg p-4 bg-background-light/30 backdrop-blur-sm hover:border-gold/50 transition-colors"
         >
           <div className="flex items-center justify-between mb-2">
-            <span
-              className="text-gold font-semibold font-serif"
-            >
-              {item.missionaryName}
-            </span>
+            <div className="flex items-center gap-2">
+              {item.senderName && (
+                <>
+                  <span className="text-violet-light font-medium text-sm">
+                    {item.senderName}
+                  </span>
+                  <span className="text-foreground-muted text-xs">&rarr;</span>
+                </>
+              )}
+              <span
+                className="text-gold font-semibold font-serif"
+              >
+                {item.missionaryName}
+              </span>
+            </div>
             <div className="flex items-center gap-2">
               <span
                 className={`text-xs px-2 py-0.5 rounded-full ${

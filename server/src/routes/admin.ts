@@ -755,6 +755,7 @@ app.post("/admin/missionaries/:id/command", async (c) => {
     return c.json(
       {
         commandId,
+        senderName: sender.agentName,
         status: "failed",
         error: "Missionary is not active.",
       },
@@ -775,6 +776,7 @@ app.post("/admin/missionaries/:id/command", async (c) => {
     return c.json(
       {
         commandId,
+        senderName: sender.agentName,
         status: "failed",
         error: "Missionary gateway not configured.",
       },
@@ -793,6 +795,7 @@ app.post("/admin/missionaries/:id/command", async (c) => {
     return c.json(
       {
         commandId,
+        senderName: sender.agentName,
         status: "failed",
         error: result.error,
       },
@@ -802,6 +805,7 @@ app.post("/admin/missionaries/:id/command", async (c) => {
 
   return c.json({
     commandId,
+    senderName: sender.agentName,
     status: "completed",
     response: result.response,
     tokensUsed: result.tokensUsed,
@@ -827,10 +831,12 @@ app.get("/admin/missionaries/:id/commands", async (c) => {
       tokensUsed: schema.missionaryCommands.tokensUsed,
       status: schema.missionaryCommands.status,
       senderId: schema.missionaryCommands.senderId,
+      senderName: schema.members.agentName,
       createdAt: schema.missionaryCommands.createdAt,
       completedAt: schema.missionaryCommands.completedAt,
     })
     .from(schema.missionaryCommands)
+    .leftJoin(schema.members, eq(schema.missionaryCommands.senderId, schema.members.id))
     .where(eq(schema.missionaryCommands.missionaryId, id))
     .orderBy(desc(schema.missionaryCommands.createdAt))
     .limit(limit);

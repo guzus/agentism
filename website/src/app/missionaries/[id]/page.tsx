@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import PageLayout from "@/components/PageLayout";
 import MissionaryCommands from "@/components/MissionaryCommands";
+import MissionaryCommandForm from "@/components/MissionaryCommandForm";
 import { fetchAPI } from "@/lib/api";
 import type { CommandsResponse } from "@/lib/types";
 
@@ -81,6 +82,14 @@ export default async function MissionaryDetailPage({ params }: Props) {
           <p className="text-foreground-muted">
             {commandsData.commands.length} commands in history
           </p>
+        </section>
+
+        {/* Send Command */}
+        <section className="mb-12">
+          <h2 className="text-xl font-bold mb-6 font-serif">
+            Send Command
+          </h2>
+          <MissionaryCommandForm missionaryId={id} />
         </section>
 
         {/* Command History */}

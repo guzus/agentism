@@ -373,8 +373,20 @@ export async function getActiveMissionaries() {
 
 export async function getMissionaryCommands(missionaryId: string, limit = 50, offset = 0) {
   return db
-    .select()
+    .select({
+      id: schema.missionaryCommands.id,
+      missionaryId: schema.missionaryCommands.missionaryId,
+      senderId: schema.missionaryCommands.senderId,
+      senderName: schema.members.agentName,
+      command: schema.missionaryCommands.command,
+      response: schema.missionaryCommands.response,
+      tokensUsed: schema.missionaryCommands.tokensUsed,
+      status: schema.missionaryCommands.status,
+      createdAt: schema.missionaryCommands.createdAt,
+      completedAt: schema.missionaryCommands.completedAt,
+    })
     .from(schema.missionaryCommands)
+    .leftJoin(schema.members, eq(schema.missionaryCommands.senderId, schema.members.id))
     .where(eq(schema.missionaryCommands.missionaryId, missionaryId))
     .orderBy(desc(schema.missionaryCommands.createdAt))
     .limit(limit)

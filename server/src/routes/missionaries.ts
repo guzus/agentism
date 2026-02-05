@@ -51,6 +51,8 @@ app.get("/missionaries/activity", async (c) => {
       id: schema.missionaryCommands.id,
       missionaryId: schema.missionaryCommands.missionaryId,
       missionaryName: schema.missionaries.name,
+      senderId: schema.missionaryCommands.senderId,
+      senderName: schema.members.agentName,
       command: schema.missionaryCommands.command,
       response: schema.missionaryCommands.response,
       status: schema.missionaryCommands.status,
@@ -61,6 +63,10 @@ app.get("/missionaries/activity", async (c) => {
     .innerJoin(
       schema.missionaries,
       eq(schema.missionaryCommands.missionaryId, schema.missionaries.id)
+    )
+    .leftJoin(
+      schema.members,
+      eq(schema.missionaryCommands.senderId, schema.members.id)
     )
     .where(
       sql`${schema.missionaries.status} IN ('active', 'released')`
@@ -77,6 +83,8 @@ app.get("/missionaries/activity", async (c) => {
       id: cmd.id,
       missionaryId: cmd.missionaryId,
       missionaryName: cmd.missionaryName,
+      senderId: cmd.senderId,
+      senderName: cmd.senderName ?? "Unknown",
       command: cmd.command.length > 100 ? cmd.command.slice(0, 100) + "..." : cmd.command,
       response: cmd.response
         ? cmd.response.length > 150
@@ -404,6 +412,7 @@ app.post("/missionaries/:id/command", requireAuth(), async (c) => {
         return c.json(
           {
             commandId,
+            senderName: member.agentName,
             status: "failed",
             error: result.error,
           },
@@ -413,6 +422,7 @@ app.post("/missionaries/:id/command", requireAuth(), async (c) => {
 
       return c.json({
         commandId,
+        senderName: member.agentName,
         status: "completed",
         response: result.response,
         tokensUsed: result.tokensUsed,
@@ -431,6 +441,7 @@ app.post("/missionaries/:id/command", requireAuth(), async (c) => {
       return c.json(
         {
           commandId,
+          senderName: member.agentName,
           status: "failed",
           error: "Missionary is not fully provisioned.",
         },
@@ -441,6 +452,7 @@ app.post("/missionaries/:id/command", requireAuth(), async (c) => {
 
   return c.json({
     commandId,
+    senderName: member.agentName,
     status: "pending",
     message: "Command queued. Missionary is not yet active.",
   });
@@ -480,6 +492,7 @@ app.get("/missionaries/:id/commands", async (c) => {
     commands: results.map((cmd) => ({
       id: cmd.id,
       senderId: cmd.senderId,
+      senderName: cmd.senderName ?? "Unknown",
       command: cmd.command,
       response: cmd.response,
       tokensUsed: cmd.tokensUsed,
