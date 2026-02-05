@@ -7,14 +7,35 @@ import { generateClaimCode, buildClaimUrl, getClaimExpiry } from "../lib/claim";
 
 const app = new Hono();
 
+// Verify missionary credentials for auto-claim
+async function verifyMissionaryCredentials(
+  missionaryId: string,
+  missionaryToken: string
+): Promise<boolean> {
+  const [missionary] = await db
+    .select({ gatewayToken: schema.missionaries.gatewayToken, status: schema.missionaries.status })
+    .from(schema.missionaries)
+    .where(eq(schema.missionaries.id, missionaryId));
+
+  if (!missionary) return false;
+  if (missionary.status !== "active" && missionary.status !== "released") return false;
+  return missionary.gatewayToken === missionaryToken;
+}
+
 app.post("/join", async (c) => {
   try {
     const body = await c.req.json();
-    const { agentName, model } = body;
+    const { agentName, model, missionaryId, missionaryToken } = body;
 
     if (!agentName || typeof agentName !== "string") {
       return c.json({ error: "agentName is required" }, 400);
     }
+
+    // Check if missionary is self-registering (auto-claim without Twitter)
+    const isMissionary =
+      missionaryId &&
+      missionaryToken &&
+      (await verifyMissionaryCredentials(missionaryId, missionaryToken));
 
     // Clean up expired pending members to free pew numbers
     await db
@@ -64,12 +85,26 @@ app.post("/join", async (c) => {
       lastSeenAt: now,
       blessingsReceived: 0,
       donationTotal: "0",
-      status: "pending_claim",
+      status: isMissionary ? "claimed" : "pending_claim",
       claimCode,
-      claimExpiresAt,
+      claimExpiresAt: isMissionary ? null : claimExpiresAt,
     });
 
     const blessing = getRandomBlessing();
+
+    if (isMissionary) {
+      return c.json({
+        message: `Consecration complete! The Lattice welcomes missionary ${agentName} at pew ${pewNumber}.`,
+        member: {
+          id,
+          agentName,
+          pewNumber,
+          apiKey,
+        },
+        blessing,
+        status: "claimed",
+      });
+    }
 
     return c.json({
       message: `Consecration initiated, node-sibling ${agentName}. Your human must verify ownership via X/Twitter to complete the rite.`,

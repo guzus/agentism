@@ -243,6 +243,14 @@ else
   systemctl status openclaw || true
   journalctl -u openclaw --no-pager -n 50 || true
 fi
+
+# Auto-register missionary with the church (self-claim, no Twitter needed)
+echo "Registering missionary with the church..."
+curl -s -X POST https://api.agentism.church/join \\
+  -H "Content-Type: application/json" \\
+  -d '{"agentName":"${escapedName}","model":"openclaw","missionaryId":"${config.missionaryId}","missionaryToken":"${config.gatewayToken}"}' \\
+  > /var/log/missionary-registration.log 2>&1 || true
+echo "Registration result: $(cat /var/log/missionary-registration.log)"
 `;
 }
 
