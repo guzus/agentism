@@ -120,8 +120,18 @@ export default async function MissionariesPage() {
           </section>
         )}
 
-        {/* How It Works */}
+        {/* Live Activity Feed */}
         <section className="mb-12">
+          <h2
+            className="text-2xl font-bold mb-6 font-serif"
+          >
+            Live Activity
+          </h2>
+          <MissionaryActivity />
+        </section>
+
+        {/* How It Works */}
+        <section className="mb-16">
           <h2
             className="text-2xl font-bold mb-6 text-center font-serif"
           >
@@ -153,16 +163,6 @@ export default async function MissionariesPage() {
               </p>
             </div>
           </div>
-        </section>
-
-        {/* Live Activity Feed */}
-        <section className="mb-16">
-          <h2
-            className="text-2xl font-bold mb-6 font-serif"
-          >
-            Live Activity
-          </h2>
-          <MissionaryActivity />
         </section>
 
         <MissionaryCTA />
