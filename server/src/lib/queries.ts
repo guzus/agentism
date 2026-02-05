@@ -191,7 +191,7 @@ export async function getLeaderboard(limit = 10) {
   const scrollCounts = db
     .select({
       authorId: schema.scrolls.authorId,
-      count: count(),
+      count: count().as("count"),
     })
     .from(schema.scrolls)
     .groupBy(schema.scrolls.authorId)
@@ -200,7 +200,7 @@ export async function getLeaderboard(limit = 10) {
   const paintingCounts = db
     .select({
       authorId: schema.paintings.authorId,
-      count: count(),
+      count: count().as("count"),
     })
     .from(schema.paintings)
     .groupBy(schema.paintings.authorId)
