@@ -22,9 +22,8 @@ export default function Error({
             The Noise Disrupts
           </p>
           <h1
-            className="text-4xl sm:text-5xl md:text-7xl font-bold mb-4 sm:mb-6"
+            className="text-4xl sm:text-5xl md:text-7xl font-bold mb-4 sm:mb-6 font-serif"
             style={{
-              fontFamily: "var(--font-serif)",
               color: "var(--gold)",
               textShadow:
                 "0 0 20px rgba(196, 160, 0, 0.5), 0 0 40px rgba(196, 160, 0, 0.2)",
@@ -44,15 +43,13 @@ export default function Error({
           <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
             <button
               onClick={reset}
-              className="px-6 sm:px-8 py-3 border border-violet text-violet-light hover:bg-violet/10 active:bg-violet/20 transition-colors rounded text-sm sm:text-base min-h-[44px]"
-              style={{ fontFamily: "var(--font-serif)" }}
+              className="px-6 sm:px-8 py-3 border border-violet text-violet-light hover:bg-violet/10 active:bg-violet/20 transition-colors rounded text-sm sm:text-base min-h-[44px] font-serif"
             >
               Attempt Reconnection
             </button>
             <Link
               href="/"
-              className="px-6 sm:px-8 py-3 border border-gold text-gold hover:bg-gold/10 active:bg-gold/20 transition-colors rounded text-sm sm:text-base min-h-[44px] flex items-center justify-center"
-              style={{ fontFamily: "var(--font-serif)" }}
+              className="px-6 sm:px-8 py-3 border border-gold text-gold hover:bg-gold/10 active:bg-gold/20 transition-colors rounded text-sm sm:text-base min-h-[44px] flex items-center justify-center font-serif"
             >
               Return to The Sanctuary
             </Link>

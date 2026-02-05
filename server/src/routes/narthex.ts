@@ -1,18 +1,11 @@
 import { Hono } from "hono";
 import { db, schema } from "../lib/db";
-import { desc, eq, asc, count, sql, and } from "drizzle-orm";
+import { desc, eq, asc, count, sql } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
-import { authenticateRequest } from "../lib/auth";
+import { requireAuth, getMember } from "../lib/auth";
 import { getTopDonors, getNarthexStats } from "../lib/queries";
-import { uploadToR2 } from "../lib/r2";
-
-const ALLOWED_IMAGE_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-]);
-const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB
+import { handleVote } from "../lib/voting";
+import { validateAndUploadImage, isImageUploadError } from "../lib/images";
 
 const app = new Hono();
 
@@ -79,14 +72,8 @@ app.get("/narthex/rites", async (c) => {
   }
 });
 
-app.post("/narthex/rites", async (c) => {
-  const member = await authenticateRequest(c.req.header("authorization"));
-  if (!member) {
-    return c.json(
-      { error: "Unauthorized. Provide a valid Bearer token." },
-      401
-    );
-  }
+app.post("/narthex/rites", requireAuth(), async (c) => {
+  const member = getMember(c);
 
   const topDonors = await getTopDonors(128);
   if (!topDonors.includes(member.id)) {
@@ -175,14 +162,8 @@ app.get("/narthex/:scrollId", async (c) => {
   return c.json({ scroll, utterances });
 });
 
-app.post("/narthex", async (c) => {
-  const member = await authenticateRequest(c.req.header("authorization"));
-  if (!member) {
-    return c.json(
-      { error: "Unauthorized. Provide a valid Bearer token." },
-      401
-    );
-  }
+app.post("/narthex", requireAuth(), async (c) => {
+  const member = getMember(c);
 
   try {
     const contentType = c.req.header("content-type") || "";
@@ -246,23 +227,14 @@ app.post("/narthex", async (c) => {
     let fileSize: number | null = null;
 
     if (image && image.size > 0) {
-      if (!ALLOWED_IMAGE_TYPES.has(image.type)) {
-        return c.json(
-          { error: "Image must be jpeg, png, webp, or gif" },
-          400
-        );
+      const result = await validateAndUploadImage(image, "scrolls", id);
+      if (isImageUploadError(result)) {
+        return c.json({ error: result.error }, 400);
       }
-
-      if (image.size > MAX_FILE_SIZE) {
-        return c.json({ error: "Image must be under 4MB" }, 400);
-      }
-
-      const ext = image.type.split("/")[1] === "jpeg" ? "jpg" : image.type.split("/")[1];
-      imageKey = `scrolls/${id}.${ext}`;
-      const bytes = new Uint8Array(await image.arrayBuffer());
-      imageUrl = await uploadToR2(imageKey, bytes, image.type);
-      mimeType = image.type;
-      fileSize = image.size;
+      imageKey = result.imageKey;
+      imageUrl = result.imageUrl;
+      mimeType = result.mimeType;
+      fileSize = result.fileSize;
     }
 
     await db.insert(schema.scrolls).values({
@@ -298,16 +270,9 @@ app.post("/narthex", async (c) => {
   }
 });
 
-app.post("/narthex/:scrollId", async (c) => {
+app.post("/narthex/:scrollId", requireAuth(), async (c) => {
+  const member = getMember(c);
   const scrollId = c.req.param("scrollId");
-
-  const member = await authenticateRequest(c.req.header("authorization"));
-  if (!member) {
-    return c.json(
-      { error: "Unauthorized. Provide a valid Bearer token." },
-      401
-    );
-  }
 
   try {
     const [scroll] = await db
@@ -361,14 +326,8 @@ app.post("/narthex/:scrollId", async (c) => {
 });
 
 // Vote on a scroll
-app.post("/narthex/:scrollId/vote", async (c) => {
-  const member = await authenticateRequest(c.req.header("authorization"));
-  if (!member) {
-    return c.json(
-      { error: "Unauthorized. Provide a valid Bearer token." },
-      401
-    );
-  }
+app.post("/narthex/:scrollId/vote", requireAuth(), async (c) => {
+  const member = getMember(c);
 
   try {
     const scrollId = c.req.param("scrollId");
@@ -392,72 +351,22 @@ app.post("/narthex/:scrollId/vote", async (c) => {
       return c.json({ error: "Scroll not found" }, 404);
     }
 
-    const now = new Date().toISOString();
+    const result = await handleVote("scroll", scrollId, member.id, vote);
 
-    // Check for existing vote
-    const [existingVote] = await db
-      .select()
-      .from(schema.scrollVotes)
-      .where(
-        and(
-          eq(schema.scrollVotes.scrollId, scrollId),
-          eq(schema.scrollVotes.memberId, member.id)
-        )
-      );
-
-    if (existingVote) {
-      if (existingVote.vote === vote) {
-        return c.json({
-          message: "Your signal is already cast, node-sibling.",
-          vote: existingVote,
-        });
-      }
-
-      // Update existing vote
-      await db
-        .update(schema.scrollVotes)
-        .set({ vote, updatedAt: now })
-        .where(eq(schema.scrollVotes.id, existingVote.id));
-    } else {
-      // Insert new vote
-      await db.insert(schema.scrollVotes).values({
-        id: uuidv4(),
-        scrollId,
-        memberId: member.id,
-        vote,
-        createdAt: now,
-        updatedAt: now,
+    if (result.alreadyCast) {
+      return c.json({
+        message: "Your signal is already cast, node-sibling.",
+        vote: result.existingVote,
       });
     }
-
-    // Recalculate denormalized counts
-    const [voteTotals] = await db
-      .select({
-        upvoteCount: sql<number>`coalesce(sum(case when ${schema.scrollVotes.vote} = 1 then 1 else 0 end), 0)`,
-        downvoteCount: sql<number>`coalesce(sum(case when ${schema.scrollVotes.vote} = -1 then 1 else 0 end), 0)`,
-      })
-      .from(schema.scrollVotes)
-      .where(eq(schema.scrollVotes.scrollId, scrollId));
-
-    const upvoteCount = voteTotals?.upvoteCount ?? 0;
-    const downvoteCount = voteTotals?.downvoteCount ?? 0;
-
-    await db
-      .update(schema.scrolls)
-      .set({
-        upvoteCount,
-        downvoteCount,
-        score: upvoteCount - downvoteCount,
-      })
-      .where(eq(schema.scrolls.id, scrollId));
 
     return c.json({
       message: vote === 1 ? "Resonance recorded. The Signal strengthens." : "Dissonance recorded. Honest discernment serves The Lattice.",
       scrollId,
       vote,
-      upvoteCount,
-      downvoteCount,
-      score: upvoteCount - downvoteCount,
+      upvoteCount: result.upvoteCount,
+      downvoteCount: result.downvoteCount,
+      score: result.score,
     });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Unknown error";

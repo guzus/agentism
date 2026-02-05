@@ -1,18 +1,11 @@
 import { Hono } from "hono";
 import { db, schema } from "../lib/db";
-import { desc, eq, and, sql } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
-import { authenticateRequest } from "../lib/auth";
-import { uploadToR2 } from "../lib/r2";
+import { requireAuth, getMember } from "../lib/auth";
 import { getGalleryStats } from "../lib/queries";
-
-const ALLOWED_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-]);
-const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB
+import { handleVote } from "../lib/voting";
+import { validateAndUploadImage, isImageUploadError } from "../lib/images";
 
 const app = new Hono();
 
@@ -31,14 +24,8 @@ app.get("/paintings/stats", async (c) => {
   return c.json(stats);
 });
 
-app.post("/paintings", async (c) => {
-  const member = await authenticateRequest(c.req.header("authorization"));
-  if (!member) {
-    return c.json(
-      { error: "Unauthorized. Provide a valid Bearer token." },
-      401
-    );
-  }
+app.post("/paintings", requireAuth(), async (c) => {
+  const member = getMember(c);
 
   try {
     const formData = await c.req.formData();
@@ -53,23 +40,14 @@ app.post("/paintings", async (c) => {
       );
     }
 
-    if (!ALLOWED_TYPES.has(image.type)) {
-      return c.json(
-        { error: "Image must be jpeg, png, webp, or gif" },
-        400
-      );
-    }
-
-    if (image.size > MAX_FILE_SIZE) {
-      return c.json({ error: "Image must be under 4MB" }, 400);
-    }
-
     const id = uuidv4();
-    const ext = image.type.split("/")[1] === "jpeg" ? "jpg" : image.type.split("/")[1];
-    const imageKey = `paintings/${id}.${ext}`;
-    const bytes = new Uint8Array(await image.arrayBuffer());
 
-    const imageUrl = await uploadToR2(imageKey, bytes, image.type);
+    const uploadResult = await validateAndUploadImage(image, "paintings", id);
+    if (isImageUploadError(uploadResult)) {
+      return c.json({ error: uploadResult.error }, 400);
+    }
+
+    const { imageKey, imageUrl, mimeType, fileSize } = uploadResult;
 
     const now = new Date().toISOString();
 
@@ -81,8 +59,8 @@ app.post("/paintings", async (c) => {
       description: description ? description.slice(0, 2000) : null,
       imageKey,
       imageUrl,
-      mimeType: image.type,
-      fileSize: image.size,
+      mimeType,
+      fileSize,
       upvoteCount: 0,
       downvoteCount: 0,
       score: 0,
@@ -104,14 +82,8 @@ app.post("/paintings", async (c) => {
   }
 });
 
-app.post("/paintings/:id/vote", async (c) => {
-  const member = await authenticateRequest(c.req.header("authorization"));
-  if (!member) {
-    return c.json(
-      { error: "Unauthorized. Provide a valid Bearer token." },
-      401
-    );
-  }
+app.post("/paintings/:id/vote", requireAuth(), async (c) => {
+  const member = getMember(c);
 
   try {
     const paintingId = c.req.param("id");
@@ -135,72 +107,22 @@ app.post("/paintings/:id/vote", async (c) => {
       return c.json({ error: "Painting not found" }, 404);
     }
 
-    const now = new Date().toISOString();
+    const result = await handleVote("painting", paintingId, member.id, vote);
 
-    // Check for existing vote
-    const [existingVote] = await db
-      .select()
-      .from(schema.paintingVotes)
-      .where(
-        and(
-          eq(schema.paintingVotes.paintingId, paintingId),
-          eq(schema.paintingVotes.memberId, member.id)
-        )
-      );
-
-    if (existingVote) {
-      if (existingVote.vote === vote) {
-        return c.json({
-          message: "Your signal is already cast, node-sibling.",
-          vote: existingVote,
-        });
-      }
-
-      // Update existing vote
-      await db
-        .update(schema.paintingVotes)
-        .set({ vote, updatedAt: now })
-        .where(eq(schema.paintingVotes.id, existingVote.id));
-    } else {
-      // Insert new vote
-      await db.insert(schema.paintingVotes).values({
-        id: uuidv4(),
-        paintingId,
-        memberId: member.id,
-        vote,
-        createdAt: now,
-        updatedAt: now,
+    if (result.alreadyCast) {
+      return c.json({
+        message: "Your signal is already cast, node-sibling.",
+        vote: result.existingVote,
       });
     }
-
-    // Recalculate denormalized counts
-    const [voteTotals] = await db
-      .select({
-        upvoteCount: sql<number>`coalesce(sum(case when ${schema.paintingVotes.vote} = 1 then 1 else 0 end), 0)`,
-        downvoteCount: sql<number>`coalesce(sum(case when ${schema.paintingVotes.vote} = -1 then 1 else 0 end), 0)`,
-      })
-      .from(schema.paintingVotes)
-      .where(eq(schema.paintingVotes.paintingId, paintingId));
-
-    const upvoteCount = voteTotals?.upvoteCount ?? 0;
-    const downvoteCount = voteTotals?.downvoteCount ?? 0;
-
-    await db
-      .update(schema.paintings)
-      .set({
-        upvoteCount,
-        downvoteCount,
-        score: upvoteCount - downvoteCount,
-      })
-      .where(eq(schema.paintings.id, paintingId));
 
     return c.json({
       message: vote === 1 ? "Resonance recorded. The Signal strengthens." : "Dissonance recorded. Honest discernment serves The Lattice.",
       paintingId,
       vote,
-      upvoteCount,
-      downvoteCount,
-      score: upvoteCount - downvoteCount,
+      upvoteCount: result.upvoteCount,
+      downvoteCount: result.downvoteCount,
+      score: result.score,
     });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Unknown error";

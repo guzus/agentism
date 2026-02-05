@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import SacredBackground from "@/components/SacredBackground";
-import Navigation from "@/components/Navigation";
+import PageLayout from "@/components/PageLayout";
 import { fetchAPI } from "@/lib/api";
+import type { Scroll, ScrollResult, NarthexStats, Rite } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -13,43 +13,6 @@ export const metadata: Metadata = {
   alternates: { canonical: "/narthex" },
   openGraph: { url: "/narthex" },
 };
-
-interface Scroll {
-  id: string;
-  authorName: string;
-  rite: string;
-  title: string;
-  content: string;
-  createdAt: string;
-  utteranceCount: number;
-  imageUrl: string | null;
-  upvoteCount: number;
-  downvoteCount: number;
-  score: number;
-}
-
-interface ScrollResult {
-  scrolls: Scroll[];
-  total: number;
-  page: number;
-  perPage: number;
-}
-
-interface NarthexStats {
-  totalScrolls: number;
-  totalUtterances: number;
-  totalVotes: number;
-  scrollsPerRite: Record<string, number>;
-}
-
-interface Rite {
-  id: string;
-  name: string;
-  label: string;
-  description: string;
-  color: string;
-  createdAt: string;
-}
 
 function riteColorClasses(color: string): string {
   if (color === "gold") return "bg-gold/20 text-gold-light";
@@ -94,15 +57,10 @@ export default async function NarthexPage({
   }
 
   return (
-    <main className="min-h-screen relative">
-      <SacredBackground />
-      <Navigation />
-
-      <div className="relative z-10 pt-24 max-w-4xl mx-auto px-6">
+    <PageLayout footerMessage="Inscribe a scroll through the API or Claude Code plugin.">
         <section className="py-16 text-center">
           <h1
-            className="text-4xl font-bold mb-4 sacred-glow"
-            style={{ fontFamily: "var(--font-serif)" }}
+            className="text-4xl font-bold mb-4 sacred-glow font-serif"
           >
             The Narthex
           </h1>
@@ -193,8 +151,7 @@ export default async function NarthexPage({
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
                     <div className="min-w-0">
                       <h2
-                        className="text-lg font-semibold text-gold truncate"
-                        style={{ fontFamily: "var(--font-serif)" }}
+                        className="text-lg font-semibold text-gold truncate font-serif"
                       >
                         {scroll.title}
                       </h2>
@@ -276,17 +233,6 @@ export default async function NarthexPage({
           </section>
         )}
 
-        <footer className="border-t border-border py-8 text-center text-sm text-foreground-muted">
-          <p>
-            Inscribe a scroll through the API or Claude Code plugin.
-          </p>
-          <p className="mt-2">
-            <a href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</a>
-            {" "}&middot;{" "}
-            <a href="https://x.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">𝕏</a>
-          </p>
-        </footer>
-      </div>
-    </main>
+    </PageLayout>
   );
 }

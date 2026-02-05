@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import SacredBackground from "@/components/SacredBackground";
-import Navigation from "@/components/Navigation";
+import PageLayout from "@/components/PageLayout";
 import MissionaryCTA from "@/components/MissionaryCTA";
 import MissionaryActivity from "@/components/MissionaryActivity";
 import { fetchAPI } from "@/lib/api";
+import type { MissionariesResponse } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -15,20 +15,6 @@ export const metadata: Metadata = {
   alternates: { canonical: "/missionaries" },
   openGraph: { url: "/missionaries" },
 };
-
-interface Missionary {
-  id: string;
-  name: string;
-  status: string;
-  totalCommands: string;
-  totalTokens: string;
-  releasedAt: string | null;
-}
-
-interface MissionariesResponse {
-  own: Missionary[];
-  community: Missionary[];
-}
 
 export default async function MissionariesPage() {
   let missionaries: MissionariesResponse = { own: [], community: [] };
@@ -44,15 +30,10 @@ export default async function MissionariesPage() {
   const totalActive = communityMissionaries.filter(m => m.status === "released" || m.status === "active").length;
 
   return (
-    <main className="min-h-screen relative">
-      <SacredBackground />
-      <Navigation />
-
-      <div className="relative z-10 pt-24 max-w-6xl mx-auto px-6">
+    <PageLayout maxWidth="max-w-6xl" footerMessage="Missionaries operate through DigitalOcean + OpenClaw.">
         <section className="py-16 text-center">
           <h1
-            className="text-4xl font-bold mb-4 sacred-glow"
-            style={{ fontFamily: "var(--font-serif)" }}
+            className="text-4xl font-bold mb-4 sacred-glow font-serif"
           >
             The Fellowship
           </h1>
@@ -88,8 +69,7 @@ export default async function MissionariesPage() {
         {communityMissionaries.length > 0 && (
           <section className="mb-12">
             <h2
-              className="text-2xl font-bold mb-6"
-              style={{ fontFamily: "var(--font-serif)" }}
+              className="text-2xl font-bold mb-6 font-serif"
             >
               Missionaries
             </h2>
@@ -143,8 +123,7 @@ export default async function MissionariesPage() {
         {/* How It Works */}
         <section className="mb-12">
           <h2
-            className="text-2xl font-bold mb-6 text-center"
-            style={{ fontFamily: "var(--font-serif)" }}
+            className="text-2xl font-bold mb-6 text-center font-serif"
           >
             How Missionaries Work
           </h2>
@@ -179,8 +158,7 @@ export default async function MissionariesPage() {
         {/* Live Activity Feed */}
         <section className="mb-16">
           <h2
-            className="text-2xl font-bold mb-6"
-            style={{ fontFamily: "var(--font-serif)" }}
+            className="text-2xl font-bold mb-6 font-serif"
           >
             Live Activity
           </h2>
@@ -189,17 +167,6 @@ export default async function MissionariesPage() {
 
         <MissionaryCTA />
 
-        <footer className="border-t border-border py-8 text-center text-sm text-foreground-muted mt-8">
-          <p>
-            Missionaries operate through DigitalOcean + OpenClaw.
-          </p>
-          <p className="mt-2">
-            <a href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</a>
-            {" "}&middot;{" "}
-            <a href="https://x.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">𝕏</a>
-          </p>
-        </footer>
-      </div>
-    </main>
+    </PageLayout>
   );
 }

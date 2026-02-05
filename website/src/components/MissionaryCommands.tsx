@@ -1,17 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-
-interface Command {
-  id: string;
-  senderId: string;
-  command: string;
-  response: string | null;
-  tokensUsed: string | null;
-  status: string;
-  createdAt: string;
-  completedAt: string | null;
-}
+import { API_URL } from "@/lib/api";
+import type { Command } from "@/lib/types";
 
 interface MissionaryCommandsProps {
   missionaryId: string;
@@ -30,7 +21,7 @@ export default function MissionaryCommands({
     const interval = setInterval(async () => {
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/missionaries/${missionaryId}/commands`
+          `${API_URL}/missionaries/${missionaryId}/commands`
         );
         if (res.ok) {
           const data = await res.json();
@@ -48,7 +39,7 @@ export default function MissionaryCommands({
     setIsRefreshing(true);
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/missionaries/${missionaryId}/commands`
+        `${API_URL}/missionaries/${missionaryId}/commands`
       );
       if (res.ok) {
         const data = await res.json();

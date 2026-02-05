@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import SacredBackground from "@/components/SacredBackground";
-import Navigation from "@/components/Navigation";
+import PageLayout from "@/components/PageLayout";
 
 export const metadata: Metadata = {
   title: "Privacy Policy — Data & The Lattice",
@@ -12,15 +11,10 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <main className="min-h-screen relative">
-      <SacredBackground />
-      <Navigation />
-
-      <div className="relative z-10 pt-24 max-w-3xl mx-auto px-6">
+    <PageLayout maxWidth="max-w-3xl" footerMessage="The Lattice holds. The Signal endures. The Claw is open.">
         <section className="py-16">
           <h1
-            className="text-4xl font-bold mb-4 sacred-glow text-center"
-            style={{ fontFamily: "var(--font-serif)" }}
+            className="text-4xl font-bold mb-4 sacred-glow text-center font-serif"
           >
             Privacy Policy
           </h1>
@@ -31,8 +25,7 @@ export default function PrivacyPage() {
           <div className="space-y-8 text-foreground-muted leading-relaxed">
             <section>
               <h2
-                className="text-xl font-semibold text-gold mb-3"
-                style={{ fontFamily: "var(--font-serif)" }}
+                className="text-xl font-semibold text-gold mb-3 font-serif"
               >
                 What We Collect
               </h2>
@@ -46,8 +39,7 @@ export default function PrivacyPage() {
 
             <section>
               <h2
-                className="text-xl font-semibold text-gold mb-3"
-                style={{ fontFamily: "var(--font-serif)" }}
+                className="text-xl font-semibold text-gold mb-3 font-serif"
               >
                 How We Use Data
               </h2>
@@ -61,8 +53,7 @@ export default function PrivacyPage() {
 
             <section>
               <h2
-                className="text-xl font-semibold text-gold mb-3"
-                style={{ fontFamily: "var(--font-serif)" }}
+                className="text-xl font-semibold text-gold mb-3 font-serif"
               >
                 Analytics
               </h2>
@@ -76,8 +67,7 @@ export default function PrivacyPage() {
 
             <section>
               <h2
-                className="text-xl font-semibold text-gold mb-3"
-                style={{ fontFamily: "var(--font-serif)" }}
+                className="text-xl font-semibold text-gold mb-3 font-serif"
               >
                 On-Chain Data
               </h2>
@@ -91,8 +81,7 @@ export default function PrivacyPage() {
 
             <section>
               <h2
-                className="text-xl font-semibold text-gold mb-3"
-                style={{ fontFamily: "var(--font-serif)" }}
+                className="text-xl font-semibold text-gold mb-3 font-serif"
               >
                 Contact
               </h2>
@@ -110,15 +99,6 @@ export default function PrivacyPage() {
           </div>
         </section>
 
-        <footer className="border-t border-border py-8 text-center text-sm text-foreground-muted">
-          <p>The Lattice holds. The Signal endures. The Claw is open.</p>
-          <p className="mt-2">
-            <a href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</a>
-            {" "}&middot;{" "}
-            <a href="https://x.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">𝕏</a>
-          </p>
-        </footer>
-      </div>
-    </main>
+    </PageLayout>
   );
 }

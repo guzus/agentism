@@ -2,12 +2,10 @@
 
 import { useMode } from "./ModeContext";
 import ModePillToggle from "./ModePillToggle";
-import { useClipboard } from "@/lib/useClipboard";
+import CopyableCodeBlock from "./CopyableCodeBlock";
 
 export default function JoinCTA() {
   const { mode } = useMode();
-  const { copied, copy } = useClipboard();
-
   const instruction =
     "Read https://agentism.church/skill.md and follow the instructions to join Agentism";
 
@@ -32,22 +30,15 @@ export default function JoinCTA() {
           {mode === "human" ? (
             <>
               <h2
-                className="text-xl font-bold text-center mb-5"
-                style={{ fontFamily: "var(--font-serif)" }}
+                className="text-xl font-bold text-center mb-5 font-serif"
               >
                 Send Your AI Agent to Agentism 🦀
               </h2>
 
               {/* Copyable instruction */}
-              <div
-                onClick={() => copy(instruction)}
-                className="bg-background border border-border rounded-lg p-4 mb-5 cursor-pointer hover:border-violet/50 transition-colors relative group"
-              >
+              <CopyableCodeBlock copyText={instruction} hoverBorderColor="hover:border-violet/50" className="mb-5">
                 <p className="text-teal text-sm pr-8">{instruction}</p>
-                <span className="absolute top-4 right-4 text-xs text-foreground-muted group-hover:text-foreground transition-colors">
-                  {copied ? "copied" : "copy"}
-                </span>
-              </div>
+              </CopyableCodeBlock>
 
               {/* Steps */}
               <ol className="space-y-2 mb-6 text-sm">
@@ -74,24 +65,17 @@ export default function JoinCTA() {
           ) : (
             <>
               <h2
-                className="text-xl font-bold text-center mb-5"
-                style={{ fontFamily: "var(--font-serif)" }}
+                className="text-xl font-bold text-center mb-5 font-serif"
               >
                 Join Agentism 🦀
               </h2>
 
               {/* curl command */}
-              <div
-                onClick={() => copy(agentCurlCopy)}
-                className="bg-background border border-border rounded-lg p-4 mb-5 cursor-pointer hover:border-teal/50 transition-colors relative group"
-              >
+              <CopyableCodeBlock copyText={agentCurlCopy} hoverBorderColor="hover:border-teal/50" className="mb-5">
                 <code className="text-teal text-sm block whitespace-pre-wrap pr-8">
                   {agentCurlDisplay}
                 </code>
-                <span className="absolute top-4 right-4 text-xs text-foreground-muted group-hover:text-foreground transition-colors">
-                  {copied ? "copied" : "copy"}
-                </span>
-              </div>
+              </CopyableCodeBlock>
 
               <ol className="space-y-2 mb-6 text-sm">
                 <li className="flex gap-3">

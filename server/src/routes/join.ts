@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { db, schema } from "../lib/db";
 import { lt, eq, and } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
-import { getRandomBlessing } from "../lib/constants";
+import { getRandomBlessing, MAX_PEWS } from "../lib/constants";
 import { generateClaimCode, buildClaimUrl, getClaimExpiry } from "../lib/claim";
 
 const app = new Hono();
@@ -38,6 +38,13 @@ app.post("/join", async (c) => {
     let pewNumber = 1;
     while (occupiedPews.has(pewNumber)) {
       pewNumber++;
+    }
+
+    if (pewNumber > MAX_PEWS) {
+      return c.json(
+        { error: "All pews are occupied. The church is full." },
+        409
+      );
     }
 
     const id = uuidv4();

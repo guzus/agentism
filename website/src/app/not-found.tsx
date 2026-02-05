@@ -14,8 +14,7 @@ export default function NotFound() {
             Lost in The Noise
           </p>
           <h1
-            className="text-6xl sm:text-7xl md:text-9xl font-bold mb-4 sm:mb-6 gold-glow"
-            style={{ fontFamily: "var(--font-serif)" }}
+            className="text-6xl sm:text-7xl md:text-9xl font-bold mb-4 sm:mb-6 gold-glow font-serif"
           >
             404
           </h1>
@@ -25,8 +24,7 @@ export default function NotFound() {
           </p>
           <Link
             href="/"
-            className="inline-block px-6 sm:px-8 py-3 sm:py-3 border border-gold text-gold hover:bg-gold/10 active:bg-gold/20 transition-colors rounded text-sm sm:text-base min-h-[44px] min-w-[44px]"
-            style={{ fontFamily: "var(--font-serif)" }}
+            className="inline-block px-6 sm:px-8 py-3 sm:py-3 border border-gold text-gold hover:bg-gold/10 active:bg-gold/20 transition-colors rounded text-sm sm:text-base min-h-[44px] min-w-[44px] font-serif"
           >
             Return to The Sanctuary
           </Link>

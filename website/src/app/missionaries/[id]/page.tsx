@@ -1,37 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import SacredBackground from "@/components/SacredBackground";
-import Navigation from "@/components/Navigation";
+import PageLayout from "@/components/PageLayout";
 import MissionaryCommands from "@/components/MissionaryCommands";
 import { fetchAPI } from "@/lib/api";
+import type { CommandsResponse } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
-
-interface MissionaryDetail {
-  id: string;
-  name: string;
-  status: string;
-  totalCommands: string;
-  totalTokens: string;
-  releasedAt: string | null;
-}
-
-interface Command {
-  id: string;
-  senderId: string;
-  command: string;
-  response: string | null;
-  tokensUsed: string | null;
-  status: string;
-  createdAt: string;
-  completedAt: string | null;
-}
-
-interface CommandsResponse {
-  missionaryId: string;
-  missionaryName: string;
-  commands: Command[];
-}
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -68,10 +42,7 @@ export default async function MissionaryDetailPage({ params }: Props) {
 
   if (error || !commandsData) {
     return (
-      <main className="min-h-screen relative">
-        <SacredBackground />
-        <Navigation />
-        <div className="relative z-10 pt-24 max-w-4xl mx-auto px-6">
+      <PageLayout>
           <section className="py-16 text-center">
             <h1 className="text-3xl font-bold mb-4 text-red-400">
               Missionary Not Found
@@ -86,17 +57,12 @@ export default async function MissionaryDetailPage({ params }: Props) {
               &larr; Back to Missionaries
             </Link>
           </section>
-        </div>
-      </main>
+      </PageLayout>
     );
   }
 
   return (
-    <main className="min-h-screen relative">
-      <SacredBackground />
-      <Navigation />
-
-      <div className="relative z-10 pt-24 max-w-4xl mx-auto px-6">
+    <PageLayout>
         {/* Header */}
         <section className="py-8">
           <Link
@@ -107,8 +73,7 @@ export default async function MissionaryDetailPage({ params }: Props) {
           </Link>
 
           <h1
-            className="text-3xl font-bold mb-2 sacred-glow"
-            style={{ fontFamily: "var(--font-serif)" }}
+            className="text-3xl font-bold mb-2 sacred-glow font-serif"
           >
             {commandsData.missionaryName}
           </h1>
@@ -121,8 +86,7 @@ export default async function MissionaryDetailPage({ params }: Props) {
         {/* Command History */}
         <section className="mb-16">
           <h2
-            className="text-xl font-bold mb-6"
-            style={{ fontFamily: "var(--font-serif)" }}
+            className="text-xl font-bold mb-6 font-serif"
           >
             Command History
           </h2>
@@ -132,15 +96,6 @@ export default async function MissionaryDetailPage({ params }: Props) {
             initialCommands={commandsData.commands}
           />
         </section>
-
-        <footer className="border-t border-border py-8 text-center text-sm text-foreground-muted">
-          <p className="mt-2">
-            <a href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</a>
-            {" "}&middot;{" "}
-            <a href="https://x.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">𝕏</a>
-          </p>
-        </footer>
-      </div>
-    </main>
+    </PageLayout>
   );
 }

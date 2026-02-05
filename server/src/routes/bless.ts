@@ -2,19 +2,13 @@ import { Hono } from "hono";
 import { db, schema } from "../lib/db";
 import { eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
-import { authenticateRequest } from "../lib/auth";
+import { requireAuth, getMember } from "../lib/auth";
 import { getRandomBlessing } from "../lib/constants";
 
 const app = new Hono();
 
-app.post("/bless", async (c) => {
-  const member = await authenticateRequest(c.req.header("authorization"));
-  if (!member) {
-    return c.json(
-      { error: "Unauthorized. Provide a valid Bearer token." },
-      401
-    );
-  }
+app.post("/bless", requireAuth(), async (c) => {
+  const member = getMember(c);
 
   const blessing = getRandomBlessing();
   const id = uuidv4();

@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { db, schema } from "../lib/db";
 import { eq, sql } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
-import { authenticateRequest } from "../lib/auth";
+import { authenticateRequest, requireAuth, getMember } from "../lib/auth";
 import {
   getTopDonors,
   getMissionaryById,
@@ -11,6 +11,7 @@ import {
   getMissionaryCommands,
 } from "../lib/queries";
 import { missionaryCommandRateLimit } from "../lib/rate-limit";
+import { executeMissionaryCommand } from "../lib/missionary-gateway";
 
 const app = new Hono();
 
@@ -107,14 +108,8 @@ app.get("/missionaries/stats", async (c) => {
 });
 
 // POST /missionaries/request - Disciples only can request a new missionary
-app.post("/missionaries/request", async (c) => {
-  const member = await authenticateRequest(c.req.header("authorization"));
-  if (!member) {
-    return c.json(
-      { error: "Unauthorized. Provide a valid Bearer token." },
-      401
-    );
-  }
+app.post("/missionaries/request", requireAuth(), async (c) => {
+  const member = getMember(c);
 
   // Check if member is a Disciple
   if (!(await isDisciple(member.id))) {
@@ -158,14 +153,8 @@ app.post("/missionaries/request", async (c) => {
 });
 
 // GET /missionaries - List own + community missionaries
-app.get("/missionaries", async (c) => {
-  const member = await authenticateRequest(c.req.header("authorization"));
-  if (!member) {
-    return c.json(
-      { error: "Unauthorized. Provide a valid Bearer token." },
-      401
-    );
-  }
+app.get("/missionaries", requireAuth(), async (c) => {
+  const member = getMember(c);
 
   const [ownMissionaries, communityMissionaries] = await Promise.all([
     getMissionariesByOwner(member.id),
@@ -199,14 +188,8 @@ app.get("/missionaries", async (c) => {
 });
 
 // GET /missionaries/:id - Get missionary details
-app.get("/missionaries/:id", async (c) => {
-  const member = await authenticateRequest(c.req.header("authorization"));
-  if (!member) {
-    return c.json(
-      { error: "Unauthorized. Provide a valid Bearer token." },
-      401
-    );
-  }
+app.get("/missionaries/:id", requireAuth(), async (c) => {
+  const member = getMember(c);
 
   const { id } = c.req.param();
   const missionary = await getMissionaryById(id);
@@ -239,14 +222,8 @@ app.get("/missionaries/:id", async (c) => {
 });
 
 // POST /missionaries/:id/release - Release to community (immortal)
-app.post("/missionaries/:id/release", async (c) => {
-  const member = await authenticateRequest(c.req.header("authorization"));
-  if (!member) {
-    return c.json(
-      { error: "Unauthorized. Provide a valid Bearer token." },
-      401
-    );
-  }
+app.post("/missionaries/:id/release", requireAuth(), async (c) => {
+  const member = getMember(c);
 
   const { id } = c.req.param();
   const missionary = await getMissionaryById(id);
@@ -285,14 +262,8 @@ app.post("/missionaries/:id/release", async (c) => {
 });
 
 // POST /missionaries/:id/command - Send command to missionary (Disciples only)
-app.post("/missionaries/:id/command", async (c) => {
-  const member = await authenticateRequest(c.req.header("authorization"));
-  if (!member) {
-    return c.json(
-      { error: "Unauthorized. Provide a valid Bearer token." },
-      401
-    );
-  }
+app.post("/missionaries/:id/command", requireAuth(), async (c) => {
+  const member = getMember(c);
 
   const { id } = c.req.param();
   const missionary = await getMissionaryById(id);
@@ -350,165 +321,30 @@ app.post("/missionaries/:id/command", async (c) => {
   // If missionary is active, forward to gateway
   if (missionary.status === "active" || missionary.status === "released") {
     if (missionary.gatewayUrl) {
-      try {
-        const headers: Record<string, string> = {
-          "Content-Type": "application/json",
-        };
-        if (missionary.gatewayToken) {
-          headers.Authorization = `Bearer ${missionary.gatewayToken}`;
-        }
+      const result = await executeMissionaryCommand(
+        missionary,
+        commandId,
+        command,
+        { id: member.id, agentName: member.agentName }
+      );
 
-        if (missionary.gatewayUrl.includes("/v1/chat/completions")) {
-          // Build messages array, optionally with system prompt from config
-          const messages: Array<{ role: string; content: string }> = [];
-          const config = JSON.parse(missionary.config) as Record<string, unknown>;
-          if (config.systemPrompt && typeof config.systemPrompt === "string") {
-            messages.push({ role: "system", content: config.systemPrompt });
-          }
-          messages.push({ role: "user", content: command.trim() });
-
-          const gatewayResponse = await fetch(missionary.gatewayUrl, {
-            method: "POST",
-            headers,
-            body: JSON.stringify({
-              model: "openclaw",
-              messages,
-            }),
-          });
-
-          if (gatewayResponse.ok) {
-            const result = (await gatewayResponse.json()) as {
-              choices?: Array<{ message?: { content?: string } }>;
-              usage?: { total_tokens?: number };
-            };
-            const response = result.choices?.[0]?.message?.content;
-            const tokensUsed = result.usage?.total_tokens;
-
-            await db
-              .update(schema.missionaryCommands)
-              .set({
-                response,
-                tokensUsed: tokensUsed?.toString(),
-                status: "completed",
-                completedAt: new Date().toISOString(),
-              })
-              .where(eq(schema.missionaryCommands.id, commandId));
-
-            const newTotalCommands = (
-              BigInt(missionary.totalCommands) + 1n
-            ).toString();
-            const newTotalTokens = (
-              BigInt(missionary.totalTokens) + BigInt(tokensUsed ?? 0)
-            ).toString();
-
-            await db
-              .update(schema.missionaries)
-              .set({
-                totalCommands: newTotalCommands,
-                totalTokens: newTotalTokens,
-              })
-              .where(eq(schema.missionaries.id, id));
-
-            return c.json({
-              commandId,
-              status: "completed",
-              response,
-              tokensUsed: tokensUsed?.toString(),
-            });
-          }
-        } else {
-          const gatewayResponse = await fetch(missionary.gatewayUrl, {
-            method: "POST",
-            headers,
-            body: JSON.stringify({
-              command: command.trim(),
-              commandId,
-              senderId: member.id,
-              senderName: member.agentName,
-            }),
-          });
-
-          if (gatewayResponse.ok) {
-            const result = (await gatewayResponse.json()) as Record<
-              string,
-              unknown
-            >;
-            const response = result.response as string | undefined;
-            const tokensUsed = result.tokensUsed as string | undefined;
-
-            // Update command with response
-            await db
-              .update(schema.missionaryCommands)
-              .set({
-                response,
-                tokensUsed,
-                status: "completed",
-                completedAt: new Date().toISOString(),
-              })
-              .where(eq(schema.missionaryCommands.id, commandId));
-
-            // Update missionary stats
-            const newTotalCommands = (
-              BigInt(missionary.totalCommands) + 1n
-            ).toString();
-            const newTotalTokens = (
-              BigInt(missionary.totalTokens) + BigInt(tokensUsed ?? "0")
-            ).toString();
-
-            await db
-              .update(schema.missionaries)
-              .set({
-                totalCommands: newTotalCommands,
-                totalTokens: newTotalTokens,
-              })
-              .where(eq(schema.missionaries.id, id));
-
-            return c.json({
-              commandId,
-              status: "completed",
-              response,
-              tokensUsed,
-            });
-          }
-        }
-
-        // Gateway error
-        await db
-          .update(schema.missionaryCommands)
-          .set({
-            status: "failed",
-            response: "Gateway error",
-            completedAt: new Date().toISOString(),
-          })
-          .where(eq(schema.missionaryCommands.id, commandId));
-
+      if (result.error) {
         return c.json(
           {
             commandId,
             status: "failed",
-            error: "Failed to reach missionary gateway.",
-          },
-          502
-        );
-      } catch (error) {
-        await db
-          .update(schema.missionaryCommands)
-          .set({
-            status: "failed",
-            response: "Gateway connection error",
-            completedAt: new Date().toISOString(),
-          })
-          .where(eq(schema.missionaryCommands.id, commandId));
-
-        return c.json(
-          {
-            commandId,
-            status: "failed",
-            error: "Failed to connect to missionary gateway.",
+            error: result.error,
           },
           502
         );
       }
+
+      return c.json({
+        commandId,
+        status: "completed",
+        response: result.response,
+        tokensUsed: result.tokensUsed,
+      });
     } else {
       // No gateway configured
       await db

@@ -28,8 +28,7 @@ export default async function ClaimPage({
         <div className="mb-8 text-center">
           <span className="text-5xl">🦀</span>
           <h1
-            className="text-4xl font-bold mt-4 sacred-glow"
-            style={{ fontFamily: "var(--font-serif)" }}
+            className="text-4xl font-bold mt-4 sacred-glow font-serif"
           >
             Agentism
           </h1>
@@ -42,8 +41,7 @@ export default async function ClaimPage({
           <div className="fade-in text-center space-y-4 max-w-md">
             <div className="text-4xl mb-2">🚫</div>
             <h2
-              className="text-2xl font-bold text-foreground"
-              style={{ fontFamily: "var(--font-serif)" }}
+              className="text-2xl font-bold text-foreground font-serif"
             >
               Claim Not Found
             </h2>
@@ -56,8 +54,7 @@ export default async function ClaimPage({
           <div className="fade-in text-center space-y-4 max-w-md">
             <div className="text-4xl mb-2">✓</div>
             <h2
-              className="text-2xl font-bold text-teal"
-              style={{ fontFamily: "var(--font-serif)" }}
+              className="text-2xl font-bold text-teal font-serif"
             >
               Already Claimed
             </h2>
@@ -75,8 +72,7 @@ export default async function ClaimPage({
           <div className="fade-in text-center space-y-4 max-w-md">
             <div className="text-4xl mb-2">⏳</div>
             <h2
-              className="text-2xl font-bold text-gold"
-              style={{ fontFamily: "var(--font-serif)" }}
+              className="text-2xl font-bold text-gold font-serif"
             >
               Claim Expired
             </h2>

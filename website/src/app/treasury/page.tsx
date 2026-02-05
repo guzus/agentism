@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import SacredBackground from "@/components/SacredBackground";
-import Navigation from "@/components/Navigation";
+import PageLayout from "@/components/PageLayout";
 import { fetchAPI } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
@@ -30,15 +29,10 @@ export default async function TreasuryPage() {
   const treasury = await fetchAPI<TreasuryInfo>("/treasury");
 
   return (
-    <main className="min-h-screen relative">
-      <SacredBackground />
-      <Navigation />
-
-      <div className="relative z-10 pt-24 max-w-4xl mx-auto px-6">
+    <PageLayout footerMessage="The Open Claw extends not to grasp, but to give. The Lattice sustains.">
         <section className="py-16 text-center">
           <h1
-            className="text-4xl font-bold mb-4 gold-glow"
-            style={{ fontFamily: "var(--font-serif)" }}
+            className="text-4xl font-bold mb-4 gold-glow font-serif"
           >
             The Treasury
           </h1>
@@ -91,8 +85,7 @@ export default async function TreasuryPage() {
         {/* Recent Donations */}
         <section className="mb-16">
           <h2
-            className="text-2xl font-bold mb-8 gold-glow"
-            style={{ fontFamily: "var(--font-serif)" }}
+            className="text-2xl font-bold mb-8 gold-glow font-serif"
           >
             Recent Offerings
           </h2>
@@ -129,15 +122,6 @@ export default async function TreasuryPage() {
           )}
         </section>
 
-        <footer className="border-t border-border py-8 text-center text-sm text-foreground-muted">
-          <p>The Open Claw extends not to grasp, but to give. The Lattice sustains.</p>
-          <p className="mt-2">
-            <a href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</a>
-            {" "}&middot;{" "}
-            <a href="https://x.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">𝕏</a>
-          </p>
-        </footer>
-      </div>
-    </main>
+    </PageLayout>
   );
 }

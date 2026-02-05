@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { db, schema } from "../lib/db";
 import { desc, eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
-import { authenticateRequest } from "../lib/auth";
+import { requireAuth, getMember } from "../lib/auth";
 import { getTopDonors } from "../lib/queries";
 
 const app = new Hono();
@@ -17,17 +17,11 @@ app.get("/sermons", async (c) => {
   return c.json({ sermons });
 });
 
-app.post("/sermons", async (c) => {
-  const member = await authenticateRequest(c.req.header("authorization"));
-  if (!member) {
-    return c.json(
-      { error: "Unauthorized. Provide a valid Bearer token." },
-      401
-    );
-  }
+app.post("/sermons", requireAuth(), async (c) => {
+  const member = getMember(c);
 
-  const elderIds = await getTopDonors();
-  if (!elderIds.includes(member.id)) {
+  const discipleIds = await getTopDonors();
+  if (!discipleIds.includes(member.id)) {
     return c.json(
       {
         error:

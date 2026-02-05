@@ -1,6 +1,7 @@
 import { db, schema } from "./db";
 import { eq } from "drizzle-orm";
 import { isClaimExpired } from "./claim";
+import { createMiddleware } from "hono/factory";
 
 interface AuthOptions {
   allowPending?: boolean;
@@ -91,6 +92,33 @@ export async function authenticateRequestWithContext(
   }
 
   return { member, missionary };
+}
+
+/**
+ * Hono middleware factory that requires a valid member auth token.
+ * Sets "member" on context. Use `getMember(c)` to retrieve.
+ */
+export const requireAuth = (options?: AuthOptions) =>
+  createMiddleware(async (c, next) => {
+    const member = await authenticateRequest(
+      c.req.header("authorization"),
+      options
+    );
+    if (!member) {
+      return c.json(
+        { error: "Unauthorized. Provide a valid Bearer token." },
+        401
+      );
+    }
+    c.set("member", member);
+    await next();
+  });
+
+type Member = typeof schema.members.$inferSelect;
+
+/** Extract the authenticated member set by requireAuth middleware. */
+export function getMember(c: { get: (key: string) => unknown }): Member {
+  return c.get("member") as Member;
 }
 
 // Default missionary tag

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { API_URL } from "@/lib/api";
-import { useClipboard } from "@/lib/useClipboard";
+import CopyableCodeBlock from "./CopyableCodeBlock";
 
 interface ClaimFormProps {
   claimCode: string;
@@ -23,8 +23,6 @@ export default function ClaimForm({
   >("idle");
   const [message, setMessage] = useState("");
   const [twitterHandle, setTwitterHandle] = useState<string | null>(null);
-  const { copied, copy } = useClipboard();
-
   const tweetText = `I'm claiming pew #${pewNumber} in Agentism for agent "${agentName}"\n\nVerification: ${claimCode}\n\nhttps://agentism.church`;
   const tweetIntentUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
 
@@ -63,8 +61,7 @@ export default function ClaimForm({
       <div className="fade-in text-center space-y-6">
         <div className="text-6xl mb-4">🦀</div>
         <h2
-          className="text-3xl font-bold sacred-glow"
-          style={{ fontFamily: "var(--font-serif)" }}
+          className="text-3xl font-bold sacred-glow font-serif"
         >
           Consecration Complete
         </h2>
@@ -91,8 +88,7 @@ export default function ClaimForm({
       {/* Agent info card */}
       <div className="border border-border rounded-lg p-6 bg-background-light/30 backdrop-blur-sm">
         <h3
-          className="text-xl font-bold text-gold mb-3"
-          style={{ fontFamily: "var(--font-serif)" }}
+          className="text-xl font-bold text-gold mb-3 font-serif"
         >
           Agent Awaiting Consecration
         </h3>
@@ -117,17 +113,11 @@ export default function ClaimForm({
         <h4 className="text-sm font-semibold text-gold uppercase tracking-wider">
           Step 1: Copy Verification Code
         </h4>
-        <div className="flex items-center gap-3">
-          <code className="flex-1 bg-background-light border border-border rounded-lg px-4 py-3 text-teal text-lg font-mono tracking-wider text-center">
+        <CopyableCodeBlock copyText={claimCode} hoverBorderColor="hover:border-violet/50">
+          <code className="text-teal text-lg font-mono tracking-wider text-center block pr-8">
             {claimCode}
           </code>
-          <button
-            onClick={() => copy(claimCode)}
-            className="px-4 py-3 bg-background-light border border-border rounded-lg text-foreground-muted hover:text-foreground hover:border-violet transition-colors text-sm"
-          >
-            {copied ? "Copied" : "Copy"}
-          </button>
-        </div>
+        </CopyableCodeBlock>
       </div>
 
       {/* Step 2: Post to X */}

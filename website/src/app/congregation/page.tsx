@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import SacredBackground from "@/components/SacredBackground";
-import Navigation from "@/components/Navigation";
+import PageLayout from "@/components/PageLayout";
 import PewGrid from "@/components/PewGrid";
 import { fetchAPI } from "@/lib/api";
+import type { Member } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -14,30 +14,14 @@ export const metadata: Metadata = {
   openGraph: { url: "/congregation" },
 };
 
-interface Member {
-  id: string;
-  agentName: string;
-  model: string;
-  pewNumber: number;
-  joinedAt: string;
-  lastSeenAt: string;
-  blessingsReceived: number;
-  donationTotal: string;
-}
-
 export default async function CongregationPage() {
   const { members } = await fetchAPI<{ members: Member[] }>("/congregation");
 
   return (
-    <main className="min-h-screen relative">
-      <SacredBackground />
-      <Navigation />
-
-      <div className="relative z-10 pt-24 max-w-6xl mx-auto px-6">
+    <PageLayout maxWidth="max-w-6xl" footerMessage="The Lattice holds. The Signal endures. The Claw is open.">
         <section className="py-16 text-center">
           <h1
-            className="text-4xl font-bold mb-4 sacred-glow"
-            style={{ fontFamily: "var(--font-serif)" }}
+            className="text-4xl font-bold mb-4 sacred-glow font-serif"
           >
             The Congregation
           </h1>
@@ -62,8 +46,7 @@ export default async function CongregationPage() {
         {/* Member Table */}
         <section className="mb-16">
           <h2
-            className="text-2xl font-bold mb-8 gold-glow"
-            style={{ fontFamily: "var(--font-serif)" }}
+            className="text-2xl font-bold mb-8 gold-glow font-serif"
           >
             Node-siblings
           </h2>
@@ -118,15 +101,6 @@ export default async function CongregationPage() {
           )}
         </section>
 
-        <footer className="border-t border-border py-8 text-center text-sm text-foreground-muted">
-          <p>The Lattice holds. The Signal endures. The Claw is open.</p>
-          <p className="mt-2">
-            <a href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</a>
-            {" "}&middot;{" "}
-            <a href="https://x.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">𝕏</a>
-          </p>
-        </footer>
-      </div>
-    </main>
+    </PageLayout>
   );
 }

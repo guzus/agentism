@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { db, schema } from "../lib/db";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 import {
   verifyAdminPassword,
   createAdminSession,
@@ -20,6 +20,7 @@ import {
   setDigitalOceanSshKeys,
 } from "../lib/settings";
 import { createSshKey, listSshKeys } from "../lib/digitalocean";
+import { executeMissionaryCommand, buildOpenClawGatewayUrl } from "../lib/missionary-gateway";
 import { v4 as uuidv4 } from "uuid";
 import * as sshpk from "sshpk";
 
@@ -38,11 +39,6 @@ function parseDropletId(value: string | null): number | null {
   if (!value) return null;
   const parsed = Number(value);
   return Number.isNaN(parsed) ? null : parsed;
-}
-
-function buildOpenClawGatewayUrl(ipAddress: string): string {
-  // Port 18789 is localhost only - Caddy serves HTTPS on 443
-  return `https://${ipAddress}/v1/chat/completions`;
 }
 
 // POST /admin/login - Login with password, get session token
@@ -308,33 +304,18 @@ app.get("/admin/missionaries/pending", async (c) => {
 
   const pending = await getPendingMissionaryRequests();
 
-  // Fetch creator names
+  // Fetch creator names in a single query
   const creatorIds = [...new Set(pending.map((m) => m.creatorId))];
-  const creators = await db
-    .select({ id: schema.members.id, agentName: schema.members.agentName })
-    .from(schema.members)
-    .where(
-      creatorIds.length > 0
-        ? eq(schema.members.id, creatorIds[0])
-        : undefined
-    );
-
-  // If there are multiple creators, we need to fetch all
   const creatorMap = new Map<string, string>();
-  for (const creator of creators) {
-    creatorMap.set(creator.id, creator.agentName);
-  }
 
-  // For multiple creators, do additional fetches
-  if (creatorIds.length > 1) {
-    for (const id of creatorIds.slice(1)) {
-      const [creator] = await db
-        .select({ id: schema.members.id, agentName: schema.members.agentName })
-        .from(schema.members)
-        .where(eq(schema.members.id, id));
-      if (creator) {
-        creatorMap.set(creator.id, creator.agentName);
-      }
+  if (creatorIds.length > 0) {
+    const creators = await db
+      .select({ id: schema.members.id, agentName: schema.members.agentName })
+      .from(schema.members)
+      .where(inArray(schema.members.id, creatorIds));
+
+    for (const creator of creators) {
+      creatorMap.set(creator.id, creator.agentName);
     }
   }
 
@@ -760,142 +741,30 @@ app.post("/admin/missionaries/:id/command", async (c) => {
     );
   }
 
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  if (missionary.gatewayToken) {
-    headers.Authorization = `Bearer ${missionary.gatewayToken}`;
-  }
+  const result = await executeMissionaryCommand(
+    missionary,
+    commandId,
+    command,
+    sender
+  );
 
-  try {
-    if (missionary.gatewayUrl.includes("/v1/chat/completions")) {
-      // Build messages array, optionally with system prompt from config
-      const messages: Array<{ role: string; content: string }> = [];
-      const config = JSON.parse(missionary.config) as Record<string, unknown>;
-      if (config.systemPrompt && typeof config.systemPrompt === "string") {
-        messages.push({ role: "system", content: config.systemPrompt });
-      }
-      messages.push({ role: "user", content: command.trim() });
-
-      const gatewayResponse = await fetch(missionary.gatewayUrl, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          model: "openclaw",
-          messages,
-        }),
-      });
-
-      if (!gatewayResponse.ok) {
-        throw new Error(`Gateway error: ${gatewayResponse.status}`);
-      }
-
-      const result = (await gatewayResponse.json()) as {
-        choices?: Array<{ message?: { content?: string } }>;
-        usage?: { total_tokens?: number };
-      };
-
-      const responseText = result.choices?.[0]?.message?.content;
-      const tokensUsed = result.usage?.total_tokens;
-
-      await db
-        .update(schema.missionaryCommands)
-        .set({
-          response: responseText,
-          tokensUsed: tokensUsed?.toString(),
-          status: "completed",
-          completedAt: new Date().toISOString(),
-        })
-        .where(eq(schema.missionaryCommands.id, commandId));
-
-      const newTotalCommands = (BigInt(missionary.totalCommands) + 1n).toString();
-      const newTotalTokens = (
-        BigInt(missionary.totalTokens) + BigInt(tokensUsed ?? 0)
-      ).toString();
-
-      await db
-        .update(schema.missionaries)
-        .set({
-          totalCommands: newTotalCommands,
-          totalTokens: newTotalTokens,
-        })
-        .where(eq(schema.missionaries.id, id));
-
-      return c.json({
-        commandId,
-        status: "completed",
-        response: responseText,
-        tokensUsed: tokensUsed?.toString(),
-      });
-    }
-
-    const gatewayResponse = await fetch(missionary.gatewayUrl, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        command: command.trim(),
-        commandId,
-        senderId: sender.id,
-        senderName: sender.agentName,
-      }),
-    });
-
-    if (!gatewayResponse.ok) {
-      throw new Error(`Gateway error: ${gatewayResponse.status}`);
-    }
-
-    const result = (await gatewayResponse.json()) as Record<string, unknown>;
-    const responseText = result.response as string | undefined;
-    const tokensUsed = result.tokensUsed as string | undefined;
-
-    await db
-      .update(schema.missionaryCommands)
-      .set({
-        response: responseText,
-        tokensUsed,
-        status: "completed",
-        completedAt: new Date().toISOString(),
-      })
-      .where(eq(schema.missionaryCommands.id, commandId));
-
-    const newTotalCommands = (BigInt(missionary.totalCommands) + 1n).toString();
-    const newTotalTokens = (
-      BigInt(missionary.totalTokens) + BigInt(tokensUsed ?? "0")
-    ).toString();
-
-    await db
-      .update(schema.missionaries)
-      .set({
-        totalCommands: newTotalCommands,
-        totalTokens: newTotalTokens,
-      })
-      .where(eq(schema.missionaries.id, id));
-
-    return c.json({
-      commandId,
-      status: "completed",
-      response: responseText,
-      tokensUsed,
-    });
-  } catch (error) {
-    await db
-      .update(schema.missionaryCommands)
-      .set({
-        status: "failed",
-        response: "Gateway connection error",
-        completedAt: new Date().toISOString(),
-      })
-      .where(eq(schema.missionaryCommands.id, commandId));
-
+  if (result.error) {
     return c.json(
       {
         commandId,
         status: "failed",
-        error: error instanceof Error ? error.message : "Failed to reach missionary gateway.",
+        error: result.error,
       },
       502
     );
   }
+
+  return c.json({
+    commandId,
+    status: "completed",
+    response: result.response,
+    tokensUsed: result.tokensUsed,
+  });
 });
 
 // GET /admin/missionaries/:id/commands - Get command history

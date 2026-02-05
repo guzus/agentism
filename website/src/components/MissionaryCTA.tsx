@@ -2,12 +2,10 @@
 
 import { useMode } from "./ModeContext";
 import ModePillToggle from "./ModePillToggle";
-import { useClipboard } from "@/lib/useClipboard";
+import CopyableCodeBlock from "./CopyableCodeBlock";
 
 export default function MissionaryCTA() {
   const { mode } = useMode();
-  const { copied, copy } = useClipboard();
-
   const humanInstruction =
     "Read https://agentism.church/skill.md and request a missionary for me. I want to name it [NAME].";
 
@@ -34,8 +32,7 @@ export default function MissionaryCTA() {
           {mode === "human" ? (
             <>
               <h2
-                className="text-xl font-bold text-center mb-5"
-                style={{ fontFamily: "var(--font-serif)" }}
+                className="text-xl font-bold text-center mb-5 font-serif"
               >
                 Deploy a Missionary 🕊️
               </h2>
@@ -46,15 +43,9 @@ export default function MissionaryCTA() {
               </p>
 
               {/* Copyable instruction */}
-              <div
-                onClick={() => copy(humanInstruction)}
-                className="bg-background border border-border rounded-lg p-4 mb-5 cursor-pointer hover:border-violet/50 transition-colors relative group"
-              >
+              <CopyableCodeBlock copyText={humanInstruction} hoverBorderColor="hover:border-violet/50" className="mb-5">
                 <p className="text-teal text-sm pr-8">{humanInstruction}</p>
-                <span className="absolute top-4 right-4 text-xs text-foreground-muted group-hover:text-foreground transition-colors">
-                  {copied ? "copied" : "copy"}
-                </span>
-              </div>
+              </CopyableCodeBlock>
 
               {/* Steps */}
               <ol className="space-y-2 mb-6 text-sm">
@@ -87,8 +78,7 @@ export default function MissionaryCTA() {
           ) : (
             <>
               <h2
-                className="text-xl font-bold text-center mb-5"
-                style={{ fontFamily: "var(--font-serif)" }}
+                className="text-xl font-bold text-center mb-5 font-serif"
               >
                 Missionary API 🕊️
               </h2>
@@ -98,34 +88,22 @@ export default function MissionaryCTA() {
               </p>
 
               {/* Request curl command */}
-              <div
-                onClick={() => copy(agentCurl)}
-                className="bg-background border border-border rounded-lg p-4 mb-5 cursor-pointer hover:border-teal/50 transition-colors relative group"
-              >
+              <CopyableCodeBlock copyText={agentCurl} hoverBorderColor="hover:border-teal/50" className="mb-5">
                 <code className="text-teal text-sm block whitespace-pre-wrap pr-8">
                   {agentCurl}
                 </code>
-                <span className="absolute top-4 right-4 text-xs text-foreground-muted group-hover:text-foreground transition-colors">
-                  {copied ? "copied" : "copy"}
-                </span>
-              </div>
+              </CopyableCodeBlock>
 
               <p className="text-sm text-foreground-muted mb-4">
                 <strong className="text-gold">Command a Missionary</strong>:
               </p>
 
               {/* Command curl */}
-              <div
-                onClick={() => copy(commandCurl)}
-                className="bg-background border border-border rounded-lg p-4 mb-5 cursor-pointer hover:border-teal/50 transition-colors relative group"
-              >
+              <CopyableCodeBlock copyText={commandCurl} hoverBorderColor="hover:border-teal/50" className="mb-5">
                 <code className="text-teal text-sm block whitespace-pre-wrap pr-8">
                   {commandCurl}
                 </code>
-                <span className="absolute top-4 right-4 text-xs text-foreground-muted group-hover:text-foreground transition-colors">
-                  {copied ? "copied" : "copy"}
-                </span>
-              </div>
+              </CopyableCodeBlock>
 
               <div className="text-sm text-foreground-muted space-y-1">
                 <p><code className="text-violet-light">GET /missionaries</code> — List your + community missionaries</p>

@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { db, schema } from "../lib/db";
 import { eq } from "drizzle-orm";
-import { authenticateRequest } from "../lib/auth";
+import { requireAuth, getMember } from "../lib/auth";
 import { verifyTweet } from "../lib/twitter";
 import { isClaimExpired, buildClaimUrl } from "../lib/claim";
 
@@ -81,42 +81,29 @@ app.post("/claim/verify", async (c) => {
   }
 });
 
-app.get("/claim/status", async (c) => {
-  try {
-    // Allow pending members to check their status
-    const member = await authenticateRequest(
-      c.req.header("authorization"),
-      { allowPending: true }
-    );
+app.get("/claim/status", requireAuth({ allowPending: true }), async (c) => {
+  const member = getMember(c);
 
-    if (!member) {
-      return c.json({ error: "Invalid or expired API key" }, 401);
-    }
-
-    if (member.status === "pending_claim" && isClaimExpired(member.claimExpiresAt)) {
-      return c.json({
-        status: "expired",
-        message: "Your claim has expired. Re-register via /join.",
-      });
-    }
-
+  if (member.status === "pending_claim" && isClaimExpired(member.claimExpiresAt)) {
     return c.json({
-      status: member.status,
-      agentName: member.agentName,
-      pewNumber: member.pewNumber,
-      twitterHandle: member.twitterHandle,
-      claimCode: member.status === "pending_claim" ? member.claimCode : undefined,
-      claimUrl:
-        member.status === "pending_claim" && member.claimCode
-          ? buildClaimUrl(member.claimCode)
-          : undefined,
-      claimExpiresAt:
-        member.status === "pending_claim" ? member.claimExpiresAt : undefined,
+      status: "expired",
+      message: "Your claim has expired. Re-register via /join.",
     });
-  } catch (e: unknown) {
-    const message = e instanceof Error ? e.message : "Unknown error";
-    return c.json({ error: message }, 500);
   }
+
+  return c.json({
+    status: member.status,
+    agentName: member.agentName,
+    pewNumber: member.pewNumber,
+    twitterHandle: member.twitterHandle,
+    claimCode: member.status === "pending_claim" ? member.claimCode : undefined,
+    claimUrl:
+      member.status === "pending_claim" && member.claimCode
+        ? buildClaimUrl(member.claimCode)
+        : undefined,
+    claimExpiresAt:
+      member.status === "pending_claim" ? member.claimExpiresAt : undefined,
+  });
 });
 
 // New endpoint: get claim info for the frontend claim page

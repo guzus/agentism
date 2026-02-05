@@ -2,28 +2,18 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-
-interface ActivityItem {
-  id: string;
-  missionaryId: string;
-  missionaryName: string;
-  command: string;
-  response: string | null;
-  status: string;
-  createdAt: string;
-  completedAt: string | null;
-}
+import { API_URL } from "@/lib/api";
+import { formatTimeAgo } from "@/lib/utils";
+import type { ActivityItem } from "@/lib/types";
 
 export default function MissionaryActivity() {
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.agentism.church";
-
     async function fetchActivity() {
       try {
-        const res = await fetch(`${apiUrl}/missionaries/activity`);
+        const res = await fetch(`${API_URL}/missionaries/activity`);
         if (res.ok) {
           const data = await res.json();
           setActivity(data.activity || []);
@@ -41,13 +31,6 @@ export default function MissionaryActivity() {
     return () => clearInterval(interval);
   }, []);
 
-  function timeAgo(dateStr: string) {
-    const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-    if (seconds < 60) return `${seconds}s ago`;
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-    return `${Math.floor(seconds / 86400)}d ago`;
-  }
 
   if (loading) {
     return (
@@ -77,8 +60,7 @@ export default function MissionaryActivity() {
         >
           <div className="flex items-center justify-between mb-2">
             <span
-              className="text-gold font-semibold"
-              style={{ fontFamily: "var(--font-serif)" }}
+              className="text-gold font-semibold font-serif"
             >
               {item.missionaryName}
             </span>
@@ -95,7 +77,7 @@ export default function MissionaryActivity() {
                 {item.status}
               </span>
               <span className="text-xs text-foreground-muted">
-                {timeAgo(item.createdAt)}
+                {formatTimeAgo(item.createdAt)}
               </span>
             </div>
           </div>

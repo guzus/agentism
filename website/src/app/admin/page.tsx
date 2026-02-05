@@ -186,8 +186,7 @@ export default function AdminPage() {
       <div className="relative z-10 pt-24 max-w-6xl mx-auto px-6">
         <section className="py-12 text-center">
           <h1
-            className="text-4xl font-bold mb-3 sacred-glow"
-            style={{ fontFamily: "var(--font-serif)" }}
+            className="text-4xl font-bold mb-3 sacred-glow font-serif"
           >
             Admin Console
           </h1>
@@ -261,8 +260,7 @@ export default function AdminPage() {
 
             <section className="mb-12">
               <h2
-                className="text-2xl font-bold mb-6 gold-glow"
-                style={{ fontFamily: "var(--font-serif)" }}
+                className="text-2xl font-bold mb-6 gold-glow font-serif"
               >
                 Pending Missionary Requests
               </h2>
@@ -317,8 +315,7 @@ export default function AdminPage() {
 
             <section className="mb-16">
               <h2
-                className="text-2xl font-bold mb-6 gold-glow"
-                style={{ fontFamily: "var(--font-serif)" }}
+                className="text-2xl font-bold mb-6 gold-glow font-serif"
               >
                 All Missionaries
               </h2>
