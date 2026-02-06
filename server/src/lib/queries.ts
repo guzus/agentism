@@ -342,14 +342,6 @@ export async function getMissionariesByOwner(memberId: string) {
     .orderBy(desc(schema.missionaries.createdAt));
 }
 
-export async function getCommunityMissionaries() {
-  return db
-    .select()
-    .from(schema.missionaries)
-    .where(eq(schema.missionaries.status, "released"))
-    .orderBy(desc(schema.missionaries.releasedAt));
-}
-
 export async function getPendingMissionaryRequests() {
   return db
     .select()
@@ -362,13 +354,21 @@ export async function getActiveMissionaries() {
   return db
     .select()
     .from(schema.missionaries)
-    .where(
-      or(
-        eq(schema.missionaries.status, "active"),
-        eq(schema.missionaries.status, "released")
-      )
-    )
+    .where(eq(schema.missionaries.status, "active"))
     .orderBy(desc(schema.missionaries.createdAt));
+}
+
+export async function getPendingCommandsCount(missionaryId: string): Promise<number> {
+  const [result] = await db
+    .select({ count: count() })
+    .from(schema.missionaryCommands)
+    .where(
+      and(
+        eq(schema.missionaryCommands.missionaryId, missionaryId),
+        eq(schema.missionaryCommands.status, "pending")
+      )
+    );
+  return result?.count ?? 0;
 }
 
 export async function getMissionaryCommands(missionaryId: string, limit = 50, offset = 0) {
@@ -413,10 +413,7 @@ export async function getMissionariesWithMembers() {
     .innerJoin(schema.members, eq(schema.missionaries.memberId, schema.members.id))
     .where(
       and(
-        or(
-          eq(schema.missionaries.status, "active"),
-          eq(schema.missionaries.status, "released")
-        ),
+        eq(schema.missionaries.status, "active"),
         isNotNull(schema.missionaries.memberId),
         isNotNull(schema.missionaries.gatewayUrl)
       )

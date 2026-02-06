@@ -36,9 +36,9 @@ export default function MissionaryCommands({
     }
   };
 
-  // Poll for updates every 10 seconds
+  // Poll for updates every 5 seconds
   useEffect(() => {
-    const interval = setInterval(() => fetchCommands(page), 10000);
+    const interval = setInterval(() => fetchCommands(page), 5000);
     return () => clearInterval(interval);
   }, [missionaryId, page]);
 

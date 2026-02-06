@@ -14,6 +14,7 @@ interface CommandResponse {
   tokensUsed?: string;
   error?: string;
   message?: string;
+  queuePosition?: number;
 }
 
 const API_KEY_STORAGE_KEY = "agentism_api_key";
@@ -24,7 +25,7 @@ export default function MissionaryCommandForm({
   const [command, setCommand] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [status, setStatus] = useState<
-    "idle" | "sending" | "success" | "error"
+    "idle" | "sending" | "success" | "queued" | "error"
   >("idle");
   const [result, setResult] = useState<CommandResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
@@ -90,7 +91,11 @@ export default function MissionaryCommandForm({
         return;
       }
 
-      setStatus("success");
+      if (data.status === "queued") {
+        setStatus("queued");
+      } else {
+        setStatus("success");
+      }
       setResult(data);
       setCommand("");
     } catch {
@@ -158,6 +163,13 @@ export default function MissionaryCommandForm({
       {status === "error" && errorMessage && (
         <div className="border border-red-500/30 rounded-lg p-4 bg-red-500/10 text-red-400 text-sm">
           {errorMessage}
+        </div>
+      )}
+
+      {/* Queued response */}
+      {status === "queued" && result && (
+        <div className="border border-blue-500/30 rounded-lg p-4 bg-blue-500/10 text-blue-300 text-sm">
+          Command queued{result.queuePosition ? ` (position #${result.queuePosition})` : ""}. It will be processed shortly.
         </div>
       )}
 

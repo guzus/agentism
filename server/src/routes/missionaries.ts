@@ -2,17 +2,15 @@ import { Hono } from "hono";
 import { db, schema } from "../lib/db";
 import { eq, sql } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
-import { authenticateRequest, requireAuth, getMember } from "../lib/auth";
+import { requireAuth, getMember } from "../lib/auth";
 import {
   getTopDonors,
   getMissionaryById,
-  getMissionariesByOwner,
   getActiveMissionaries,
-  getCommunityMissionaries,
   getMissionaryCommands,
+  getPendingCommandsCount,
 } from "../lib/queries";
 import { missionaryCommandRateLimit } from "../lib/rate-limit";
-import { executeMissionaryCommand } from "../lib/missionary-gateway";
 
 const app = new Hono();
 
@@ -22,19 +20,17 @@ async function isDisciple(memberId: string): Promise<boolean> {
   return topDonors.includes(memberId);
 }
 
-// GET /missionaries/public - Public endpoint for active + released missionaries (no auth)
+// GET /missionaries/public - Public endpoint for active missionaries (no auth)
 app.get("/missionaries/public", async (c) => {
   const allMissionaries = await getActiveMissionaries();
 
   return c.json({
-    own: [],
-    community: allMissionaries.map((m) => ({
+    missionaries: allMissionaries.map((m) => ({
       id: m.id,
       name: m.name,
       status: m.status,
       totalCommands: m.totalCommands,
       totalTokens: m.totalTokens,
-      releasedAt: m.releasedAt,
     })),
   });
 });
@@ -68,9 +64,7 @@ app.get("/missionaries/activity", async (c) => {
       schema.members,
       eq(schema.missionaryCommands.senderId, schema.members.id)
     )
-    .where(
-      sql`${schema.missionaries.status} IN ('active', 'released')`
-    )
+    .where(eq(schema.missionaries.status, "active"))
     .orderBy(sql`${schema.missionaryCommands.createdAt} DESC`)
     .limit(limit + 1)
     .offset(offset);
@@ -116,7 +110,6 @@ app.get("/missionaries/stats", async (c) => {
 
   return c.json({
     totalActive: allMissionaries.length,
-    totalCommunity: allMissionaries.filter((m) => m.status === "released").length,
     totalCommands: totalCommands.toString(),
     totalTokens: totalTokens.toString(),
   });
@@ -131,7 +124,7 @@ app.get("/missionaries/:id/health", async (c) => {
     return c.json({ error: "Missionary not found." }, 404);
   }
 
-  if (missionary.status !== "active" && missionary.status !== "released") {
+  if (missionary.status !== "active") {
     return c.json({
       id: missionary.id,
       name: missionary.name,
@@ -232,21 +225,12 @@ app.post("/missionaries/request", requireAuth(), async (c) => {
   });
 });
 
-// GET /missionaries - List own + community missionaries
+// GET /missionaries - List active missionaries
 app.get("/missionaries", requireAuth(), async (c) => {
-  const member = getMember(c);
-
-  const [ownMissionaries, communityMissionaries] = await Promise.all([
-    getMissionariesByOwner(member.id),
-    getCommunityMissionaries(),
-  ]);
-
-  // Filter out own missionaries from community list to avoid duplicates
-  const ownIds = new Set(ownMissionaries.map((m) => m.id));
-  const community = communityMissionaries.filter((m) => !ownIds.has(m.id));
+  const allMissionaries = await getActiveMissionaries();
 
   return c.json({
-    own: ownMissionaries.map((m) => ({
+    missionaries: allMissionaries.map((m) => ({
       id: m.id,
       name: m.name,
       status: m.status,
@@ -254,20 +238,11 @@ app.get("/missionaries", requireAuth(), async (c) => {
       totalTokens: m.totalTokens,
       createdAt: m.createdAt,
       approvedAt: m.approvedAt,
-      releasedAt: m.releasedAt,
-    })),
-    community: community.map((m) => ({
-      id: m.id,
-      name: m.name,
-      status: m.status,
-      totalCommands: m.totalCommands,
-      totalTokens: m.totalTokens,
-      releasedAt: m.releasedAt,
     })),
   });
 });
 
-// GET /missionaries/:id - Get missionary details
+// GET /missionaries/:id - Get missionary details (Disciples only)
 app.get("/missionaries/:id", requireAuth(), async (c) => {
   const member = getMember(c);
 
@@ -278,70 +253,26 @@ app.get("/missionaries/:id", requireAuth(), async (c) => {
     return c.json({ error: "Missionary not found." }, 404);
   }
 
-  // Only owner or anyone if released can view details
-  const isOwner = missionary.ownerId === member.id;
-  const isReleased = missionary.status === "released";
-
-  if (!isOwner && !isReleased) {
-    return c.json({ error: "Access denied." }, 403);
+  if (missionary.status !== "active") {
+    return c.json({ error: "Missionary is not active." }, 403);
   }
+
+  const isCreator = missionary.creatorId === member.id;
 
   return c.json({
     id: missionary.id,
     name: missionary.name,
     status: missionary.status,
-    gatewayUrl: isOwner ? missionary.gatewayUrl : undefined,
-    config: isOwner ? (() => { try { return JSON.parse(missionary.config); } catch { return {}; } })() : undefined,
+    gatewayUrl: isCreator ? missionary.gatewayUrl : undefined,
+    config: isCreator ? (() => { try { return JSON.parse(missionary.config); } catch { return {}; } })() : undefined,
     totalCommands: missionary.totalCommands,
     totalTokens: missionary.totalTokens,
     createdAt: missionary.createdAt,
     approvedAt: missionary.approvedAt,
-    releasedAt: missionary.releasedAt,
-    isOwner,
   });
 });
 
-// POST /missionaries/:id/release - Release to community (immortal)
-app.post("/missionaries/:id/release", requireAuth(), async (c) => {
-  const member = getMember(c);
-
-  const { id } = c.req.param();
-  const missionary = await getMissionaryById(id);
-
-  if (!missionary) {
-    return c.json({ error: "Missionary not found." }, 404);
-  }
-
-  if (missionary.ownerId !== member.id) {
-    return c.json({ error: "Only the owner can release a missionary." }, 403);
-  }
-
-  if (missionary.status !== "active") {
-    return c.json(
-      { error: "Only active missionaries can be released." },
-      400
-    );
-  }
-
-  const now = new Date().toISOString();
-
-  await db
-    .update(schema.missionaries)
-    .set({
-      status: "released",
-      ownerId: null,
-      releasedAt: now,
-    })
-    .where(eq(schema.missionaries.id, id));
-
-  return c.json({
-    id,
-    status: "released",
-    message: "Missionary released to the community. It is now immortal.",
-  });
-});
-
-// POST /missionaries/:id/command - Send command to missionary (Disciples only)
+// POST /missionaries/:id/command - Enqueue command (Disciples only)
 app.post("/missionaries/:id/command", requireAuth(), async (c) => {
   const member = getMember(c);
 
@@ -352,14 +283,15 @@ app.post("/missionaries/:id/command", requireAuth(), async (c) => {
     return c.json({ error: "Missionary not found." }, 404);
   }
 
-  // Check access: owner, or Disciple for released missionaries
-  const isOwner = missionary.ownerId === member.id;
-  const isReleased = missionary.status === "released";
-  const memberIsDisciple = await isDisciple(member.id);
+  if (missionary.status !== "active") {
+    return c.json({ error: "Missionary is not active." }, 400);
+  }
 
-  if (!isOwner && !(isReleased && memberIsDisciple)) {
+  // Disciples only
+  const memberIsDisciple = await isDisciple(member.id);
+  if (!memberIsDisciple) {
     return c.json(
-      { error: "Only the owner or Disciples can send commands to this missionary." },
+      { error: "Only Disciples (top 128 donors) can command missionaries." },
       403
     );
   }
@@ -367,8 +299,7 @@ app.post("/missionaries/:id/command", requireAuth(), async (c) => {
   // Check rate limit
   const rateLimitResult = await missionaryCommandRateLimit(
     member.id,
-    missionary.id,
-    isOwner
+    missionary.id
   );
   if (rateLimitResult) {
     return c.json(rateLimitResult, 429);
@@ -385,7 +316,7 @@ app.post("/missionaries/:id/command", requireAuth(), async (c) => {
     return c.json({ error: "Command must be 2000 characters or less." }, 400);
   }
 
-  // Create command record
+  // Enqueue command
   const commandId = uuidv4();
   const now = new Date().toISOString();
 
@@ -398,63 +329,14 @@ app.post("/missionaries/:id/command", requireAuth(), async (c) => {
     createdAt: now,
   });
 
-  // If missionary is active, forward to gateway
-  if (missionary.status === "active" || missionary.status === "released") {
-    if (missionary.gatewayUrl) {
-      const result = await executeMissionaryCommand(
-        missionary,
-        commandId,
-        command,
-        { id: member.id, agentName: member.agentName }
-      );
-
-      if (result.error) {
-        return c.json(
-          {
-            commandId,
-            senderName: member.agentName,
-            status: "failed",
-            error: result.error,
-          },
-          502
-        );
-      }
-
-      return c.json({
-        commandId,
-        senderName: member.agentName,
-        status: "completed",
-        response: result.response,
-        tokensUsed: result.tokensUsed,
-      });
-    } else {
-      // No gateway configured
-      await db
-        .update(schema.missionaryCommands)
-        .set({
-          status: "failed",
-          response: "Missionary gateway not configured",
-          completedAt: new Date().toISOString(),
-        })
-        .where(eq(schema.missionaryCommands.id, commandId));
-
-      return c.json(
-        {
-          commandId,
-          senderName: member.agentName,
-          status: "failed",
-          error: "Missionary is not fully provisioned.",
-        },
-        503
-      );
-    }
-  }
+  // Get queue position
+  const queuePosition = await getPendingCommandsCount(missionary.id);
 
   return c.json({
     commandId,
     senderName: member.agentName,
-    status: "pending",
-    message: "Command queued. Missionary is not yet active.",
+    status: "queued",
+    queuePosition,
   });
 });
 
@@ -467,15 +349,9 @@ app.get("/missionaries/:id/commands", async (c) => {
     return c.json({ error: "Missionary not found." }, 404);
   }
 
-  // Active and released missionaries have public command history
-  const isPublic = missionary.status === "active" || missionary.status === "released";
-
-  // For non-public, require owner auth
-  if (!isPublic) {
-    const member = await authenticateRequest(c.req.header("authorization"));
-    if (!member || missionary.ownerId !== member.id) {
-      return c.json({ error: "Access denied." }, 403);
-    }
+  // Active missionaries have public command history
+  if (missionary.status !== "active") {
+    return c.json({ error: "Missionary is not active." }, 403);
   }
 
   const page = Math.max(Number(c.req.query("page")) || 1, 1);

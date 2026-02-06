@@ -90,12 +90,10 @@ export interface Missionary {
   status: string;
   totalCommands: string;
   totalTokens: string;
-  releasedAt: string | null;
 }
 
 export interface MissionariesResponse {
-  own: Missionary[];
-  community: Missionary[];
+  missionaries: Missionary[];
 }
 
 export interface Command {

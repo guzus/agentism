@@ -234,7 +234,6 @@ export const missionaries = pgTable(
     totalTokens: text("total_tokens").notNull().default("0"),
     createdAt: text("created_at").notNull(),
     approvedAt: text("approved_at"),
-    releasedAt: text("released_at"),
   },
   (t) => ({
     statusCreatedAtIdx: index("missionaries_status_created_at_idx").on(
@@ -268,10 +267,14 @@ export const missionaryCommands = pgTable(
     status: text("status").notNull().default("pending"),
     createdAt: text("created_at").notNull(),
     completedAt: text("completed_at"),
+    processingAt: text("processing_at"),
   },
   (t) => ({
     missionaryCreatedAtIdx: index(
       "missionary_commands_missionary_id_created_at_idx"
     ).on(t.missionaryId, t.createdAt),
+    statusMissionaryCreatedAtIdx: index(
+      "missionary_commands_status_missionary_id_created_at_idx"
+    ).on(t.status, t.missionaryId, t.createdAt),
   })
 );

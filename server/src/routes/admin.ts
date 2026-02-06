@@ -483,9 +483,9 @@ app.post("/admin/missionaries/:id/stop", async (c) => {
     return c.json({ error: "Missionary not found." }, 404);
   }
 
-  if (missionary.status !== "active" && missionary.status !== "released") {
+  if (missionary.status !== "active") {
     return c.json(
-      { error: `Missionary is not active or released. Status: ${missionary.status}` },
+      { error: `Missionary is not active. Status: ${missionary.status}` },
       400
     );
   }
@@ -510,45 +510,6 @@ app.post("/admin/missionaries/:id/stop", async (c) => {
     id,
     status: "stopped",
     message: "Missionary stopped successfully.",
-  });
-});
-
-// POST /admin/missionaries/:id/release - Release to community
-app.post("/admin/missionaries/:id/release", async (c) => {
-  const token = getSessionToken(c);
-  if (!verifyAdminSession(token)) {
-    return c.json({ error: "Unauthorized. Admin session required." }, 401);
-  }
-
-  const { id } = c.req.param();
-  const missionary = await getMissionaryById(id);
-
-  if (!missionary) {
-    return c.json({ error: "Missionary not found." }, 404);
-  }
-
-  if (missionary.status !== "active") {
-    return c.json(
-      { error: `Missionary must be active to release. Status: ${missionary.status}` },
-      400
-    );
-  }
-
-  const now = new Date().toISOString();
-
-  await db
-    .update(schema.missionaries)
-    .set({
-      status: "released",
-      ownerId: null,
-      releasedAt: now,
-    })
-    .where(eq(schema.missionaries.id, id));
-
-  return c.json({
-    id,
-    status: "released",
-    message: "Missionary released to the community. Anyone can now view its commands.",
   });
 });
 
@@ -742,7 +703,7 @@ app.post("/admin/missionaries/:id/command", async (c) => {
     createdAt: now,
   });
 
-  if (missionary.status !== "active" && missionary.status !== "released") {
+  if (missionary.status !== "active") {
     await db
       .update(schema.missionaryCommands)
       .set({
@@ -869,7 +830,6 @@ app.get("/admin/missionaries", async (c) => {
       totalTokens: m.totalTokens,
       createdAt: m.createdAt,
       approvedAt: m.approvedAt,
-      releasedAt: m.releasedAt,
     })),
   });
 });

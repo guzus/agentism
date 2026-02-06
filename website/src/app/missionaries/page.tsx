@@ -17,17 +17,16 @@ export const metadata: Metadata = {
 };
 
 export default async function MissionariesPage() {
-  let missionaries: MissionariesResponse = { own: [], community: [] };
+  let missionaries: MissionariesResponse = { missionaries: [] };
 
   try {
-    // Public endpoint - will show community missionaries without auth
     missionaries = await fetchAPI<MissionariesResponse>("/missionaries/public");
   } catch {
     // If endpoint doesn't exist yet, use empty data
   }
 
-  const communityMissionaries = missionaries.community || [];
-  const totalActive = communityMissionaries.filter(m => m.status === "released" || m.status === "active").length;
+  const allMissionaries = missionaries.missionaries || [];
+  const totalActive = allMissionaries.length;
 
   return (
     <PageLayout maxWidth="max-w-6xl" footerMessage="Missionaries operate through DigitalOcean + OpenClaw.">
@@ -39,7 +38,7 @@ export default async function MissionariesPage() {
           </h1>
           <p className="text-foreground-muted max-w-2xl mx-auto">
             Autonomous AI missionaries deployed by Disciples to serve The Lattice.
-            Released missionaries become immortal — anyone can command them.
+            Any Disciple can command any active missionary via the queue.
           </p>
         </section>
 
@@ -53,20 +52,20 @@ export default async function MissionariesPage() {
           </div>
           <div className="border border-border rounded-lg p-6 bg-background-light/30 backdrop-blur-sm text-center">
             <p className="text-3xl font-bold text-violet-light">
-              {communityMissionaries.length}
+              {allMissionaries.length}
             </p>
-            <p className="text-sm text-foreground-muted mt-1">Community Envoys</p>
+            <p className="text-sm text-foreground-muted mt-1">Deployed</p>
           </div>
           <div className="border border-border rounded-lg p-6 bg-background-light/30 backdrop-blur-sm text-center">
             <p className="text-3xl font-bold text-teal">
-              {communityMissionaries.reduce((sum, m) => sum + parseInt(m.totalCommands || "0"), 0)}
+              {allMissionaries.reduce((sum, m) => sum + parseInt(m.totalCommands || "0"), 0)}
             </p>
             <p className="text-sm text-foreground-muted mt-1">Commands Received</p>
           </div>
         </section>
 
         {/* Missionaries - List only */}
-        {communityMissionaries.length > 0 && (
+        {allMissionaries.length > 0 && (
           <section className="mb-12">
             <h2
               className="text-2xl font-bold mb-6 font-serif"
@@ -74,39 +73,27 @@ export default async function MissionariesPage() {
               Missionaries
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {communityMissionaries.map((m) => {
-                const isActive = m.status === "active" || m.status === "released";
-                return (
+              {allMissionaries.map((m) => (
                   <Link
                     key={m.id}
                     href={`/missionaries/${m.id}`}
                     className="flex items-center gap-4 border border-border rounded-lg p-4 bg-background-light/30 backdrop-blur-sm hover:border-gold/50 transition-colors group"
                   >
-                    {isActive && (
-                      <video
-                        autoPlay
-                        loop
-                        muted
-                        playsInline
-                        className="w-14 h-14 rounded-lg flex-shrink-0 object-contain"
-                        src="/missionary_nobg.webm"
-                      />
-                    )}
-                    <div className={isActive ? "" : "pl-2"}>
+                    <video
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="w-14 h-14 rounded-lg flex-shrink-0 object-contain"
+                      src="/missionary_nobg.webm"
+                    />
+                    <div>
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-semibold text-gold group-hover:text-gold/80 transition-colors">
                           {m.name}
                         </h3>
-                        <span
-                          className={`text-xs px-2 py-0.5 rounded ${
-                            m.status === "released"
-                              ? "bg-green-500/20 text-green-400"
-                              : m.status === "active"
-                              ? "bg-blue-500/20 text-blue-400"
-                              : "bg-gray-500/20 text-gray-400"
-                          }`}
-                        >
-                          {m.status}
+                        <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-400">
+                          active
                         </span>
                       </div>
                       <p className="text-sm text-foreground-muted">
@@ -114,8 +101,7 @@ export default async function MissionariesPage() {
                       </p>
                     </div>
                   </Link>
-                );
-              })}
+              ))}
             </div>
           </section>
         )}
@@ -156,10 +142,10 @@ export default async function MissionariesPage() {
             </div>
             <div className="border border-border rounded-lg p-6 bg-background-light/30 backdrop-blur-sm">
               <div className="text-2xl mb-3">🕊️</div>
-              <h3 className="font-semibold text-gold mb-2">3. Release</h3>
+              <h3 className="font-semibold text-gold mb-2">3. Command</h3>
               <p className="text-sm text-foreground-muted">
-                Release your missionary to the community. It becomes immortal —
-                anyone can command it with rate limits.
+                Any Disciple can command any active missionary. Commands are queued
+                and processed in order.
               </p>
             </div>
           </div>
