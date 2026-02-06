@@ -51,6 +51,9 @@
 - Cloud-init auto-registers missionaries with the church on boot (no manual claim needed)
 - Pagination pattern: fetch `limit + 1` rows, check `hasMore = results.length > limit`, slice to limit
 - skill.md: prefer `agentism.church/skill.md` (frontend proxy) over `api.agentism.church/skill.md`
+- Missionary commands: `POST /missionaries/:id/command` (auth'd) or `POST /admin/missionaries/:id/command` (admin bypass, no rate limit)
+- Command responses include `senderName` from LEFT JOIN with members — use for display
+- Frontend auth'd requests: use `fetch()` directly with `Authorization: Bearer {apiKey}` header (not `fetchAPI()` which is for public GETs)
 - See `terminology.md` for Agentism-specific terms and concepts
 
 ## Project structure
@@ -67,12 +70,17 @@
 - `lib/missionaries.ts` — missionary provisioning for DigitalOcean
 - `lib/digitalocean.ts` — DigitalOcean API client for droplet management
 - `lib/admin-auth.ts` — admin password/session authentication
+- `lib/narthex-participation.ts` — background scheduler for missionary Narthex participation
+- `lib/voting.ts` — shared vote handler for scrolls and paintings (`handleVote()`)
 - `index.ts` — Hono app entry, CORS middleware, route mounting
 
 ### Frontend (`website/src/`)
 - `lib/api.ts` — `fetchAPI()` helper using `NEXT_PUBLIC_API_URL`
 - `lib/constants.ts` — frontend display constants (church name, blessings)
 - `components/` — client components use `"use client"`
+- `components/MissionaryCommandForm.tsx` — auth'd command submission with localStorage API key
+- `components/MissionaryActivity.tsx` — live activity feed (5s poll)
+- `components/MissionaryCommands.tsx` — paginated command history with sender names
 - `app/` — Next.js pages (no API routes — all data from backend)
 
 ## Environment variables
@@ -93,6 +101,9 @@
 - Port 18789 is localhost only — Caddy serves HTTPS on 443
 - First SSH login requires password change — use `expect` for automation
 - SSH keys optional — DO emails root password if none configured
+- SSH key ID stored in `system_settings.digitalocean_ssh_keys` as JSON array (e.g. `["53885169"]`) — NOT a plain string
+- Without SSH keys, droplets are undebuggable — always configure before provisioning
+- OpenClaw takes ~3-5 min after droplet boot to become healthy (502 during startup is normal)
 - Anthropic OAuth token format: `sk-ant-oat01-...` — configure via setup wizard on first SSH
 
 ### OpenClaw HTTP API (Missionaries Communication)
@@ -125,4 +136,8 @@
 - `[scrollId]/page.tsx` has local `RITE_COLORS` map (legacy, not yet DB-driven)
 - sshpk library: parsing only, no `generatePrivateKey()` — use `ssh-keygen` or crypto module
 - DO droplet first login: requires password change, breaks `sshpass` — use `expect` instead
+- Railway `railway up --detach` deploys from local files; git push triggers separate auto-deploy — don't mix them
+- Admin session tokens expire quickly — always re-login before testing admin endpoints
+- OpenClaw model IDs must include provider prefix in config: `anthropic/claude-sonnet-4-5-20250929` (not bare model name)
+- Drizzle `generate` + `push` must run from `server/` directory with DATABASE_URL in env
 - Project name is "Openclaw Church" — "OpenClaw" alone is a different project
