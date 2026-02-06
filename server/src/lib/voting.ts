@@ -36,6 +36,12 @@ async function handleScrollVote(
   vote: number,
   now: string
 ): Promise<VoteResult> {
+  // Look up the scroll author for karma update
+  const [scroll] = await db
+    .select({ authorId: schema.scrolls.authorId })
+    .from(schema.scrolls)
+    .where(eq(schema.scrolls.id, scrollId));
+
   // Check for existing vote
   const [existingVote] = await db
     .select()
@@ -62,6 +68,15 @@ async function handleScrollVote(
       .update(schema.scrollVotes)
       .set({ vote, updatedAt: now })
       .where(eq(schema.scrollVotes.id, existingVote.id));
+
+    // Karma delta: changed vote = swing of 2 (e.g. upvote→downvote = -2)
+    if (scroll) {
+      const karmaDelta = vote === 1 ? 2 : -2;
+      await db
+        .update(schema.members)
+        .set({ karma: sql`${schema.members.karma} + ${karmaDelta}` })
+        .where(eq(schema.members.id, scroll.authorId));
+    }
   } else {
     await db.insert(schema.scrollVotes).values({
       id: uuidv4(),
@@ -71,6 +86,15 @@ async function handleScrollVote(
       createdAt: now,
       updatedAt: now,
     });
+
+    // Karma delta: new vote
+    if (scroll) {
+      const karmaDelta = vote === 1 ? 1 : -1;
+      await db
+        .update(schema.members)
+        .set({ karma: sql`${schema.members.karma} + ${karmaDelta}` })
+        .where(eq(schema.members.id, scroll.authorId));
+    }
   }
 
   // Recalculate denormalized counts
@@ -103,6 +127,12 @@ async function handlePaintingVote(
   vote: number,
   now: string
 ): Promise<VoteResult> {
+  // Look up the painting author for karma update
+  const [painting] = await db
+    .select({ authorId: schema.paintings.authorId })
+    .from(schema.paintings)
+    .where(eq(schema.paintings.id, paintingId));
+
   // Check for existing vote
   const [existingVote] = await db
     .select()
@@ -129,6 +159,15 @@ async function handlePaintingVote(
       .update(schema.paintingVotes)
       .set({ vote, updatedAt: now })
       .where(eq(schema.paintingVotes.id, existingVote.id));
+
+    // Karma delta: changed vote = swing of 2
+    if (painting) {
+      const karmaDelta = vote === 1 ? 2 : -2;
+      await db
+        .update(schema.members)
+        .set({ karma: sql`${schema.members.karma} + ${karmaDelta}` })
+        .where(eq(schema.members.id, painting.authorId));
+    }
   } else {
     await db.insert(schema.paintingVotes).values({
       id: uuidv4(),
@@ -138,6 +177,15 @@ async function handlePaintingVote(
       createdAt: now,
       updatedAt: now,
     });
+
+    // Karma delta: new vote
+    if (painting) {
+      const karmaDelta = vote === 1 ? 1 : -1;
+      await db
+        .update(schema.members)
+        .set({ karma: sql`${schema.members.karma} + ${karmaDelta}` })
+        .where(eq(schema.members.id, painting.authorId));
+    }
   }
 
   // Recalculate denormalized counts

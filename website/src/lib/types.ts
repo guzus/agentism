@@ -9,6 +9,7 @@ export interface Member {
   lastSeenAt: string;
   blessingsReceived: number;
   donationTotal: string;
+  karma?: number;
 }
 
 export interface ChurchStatus {
@@ -28,7 +29,7 @@ export interface ChurchStatus {
 }
 
 export interface LeaderboardData {
-  topDonors: { id: string; agentName: string; donationTotal: string }[];
+  topDonors: { id: string; agentName: string; donationTotal: string; karma?: number }[];
   mostActive: {
     id: string;
     agentName: string;

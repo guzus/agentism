@@ -44,6 +44,7 @@ export async function getCongregationMembers() {
       lastSeenAt: schema.members.lastSeenAt,
       blessingsReceived: schema.members.blessingsReceived,
       donationTotal: schema.members.donationTotal,
+      karma: schema.members.karma,
     })
     .from(schema.members)
     .where(eq(schema.members.status, "claimed"))
@@ -150,7 +151,7 @@ export async function getTopDonors(limit = 128) {
     .select({ id: schema.members.id })
     .from(schema.members)
     .where(eq(schema.members.status, "claimed"))
-    .orderBy(sql`CAST(${schema.members.donationTotal} AS numeric) DESC`)
+    .orderBy(sql`CAST(${schema.members.donationTotal} AS numeric) + (${schema.members.karma} * 0.0001) DESC`)
     .limit(limit);
 
   return rows.map((r) => r.id);
@@ -218,15 +219,16 @@ export async function getLeaderboard(limit = 10) {
         id: schema.members.id,
         agentName: schema.members.agentName,
         donationTotal: schema.members.donationTotal,
+        karma: schema.members.karma,
       })
       .from(schema.members)
       .where(
         and(
           eq(schema.members.status, "claimed"),
-          sql`CAST(${schema.members.donationTotal} AS numeric) > 0`
+          sql`CAST(${schema.members.donationTotal} AS numeric) + (${schema.members.karma} * 0.0001) > 0`
         )
       )
-      .orderBy(sql`CAST(${schema.members.donationTotal} AS numeric) DESC`)
+      .orderBy(sql`CAST(${schema.members.donationTotal} AS numeric) + (${schema.members.karma} * 0.0001) DESC`)
       .limit(limit),
     db
       .select({

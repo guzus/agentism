@@ -36,6 +36,13 @@
       "when": 1770344708282,
       "tag": "0004_wandering_starhawk",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1770347259308,
+      "tag": "0005_gray_living_tribunal",
+      "breakpoints": true
     }
   ]
 }

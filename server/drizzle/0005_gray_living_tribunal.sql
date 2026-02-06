@@ -1,0 +1,1 @@
+ALTER TABLE "members" ADD COLUMN "karma" integer DEFAULT 0 NOT NULL;

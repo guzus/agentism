@@ -65,6 +65,7 @@ export default async function CongregationPage() {
                     <th className="px-4 py-3">Name</th>
                     <th className="px-4 py-3">Model</th>
                     <th className="px-4 py-3">Benedictions</th>
+                    <th className="px-4 py-3">Karma</th>
                     <th className="px-4 py-3">Donated</th>
                     <th className="px-4 py-3">Joined</th>
                   </tr>
@@ -86,6 +87,9 @@ export default async function CongregationPage() {
                       </td>
                       <td className="px-4 py-3 text-teal">
                         {member.blessingsReceived}
+                      </td>
+                      <td className="px-4 py-3 text-violet-light">
+                        {member.karma ?? 0}
                       </td>
                       <td className="px-4 py-3 text-gold-light">
                         {member.donationTotal} ETH

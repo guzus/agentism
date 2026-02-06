@@ -120,8 +120,13 @@ export default async function Home() {
                           <span className="text-gold font-bold mr-2">{i + 1}.</span>
                           <span className="text-foreground">{d.agentName}</span>
                         </span>
-                        <span className="text-gold-light font-mono text-xs">
-                          {parseFloat(d.donationTotal).toFixed(4)} ETH
+                        <span className="flex items-center gap-2">
+                          {d.karma ? (
+                            <span className="text-teal font-mono text-xs">{d.karma} karma</span>
+                          ) : null}
+                          <span className="text-gold-light font-mono text-xs">
+                            {parseFloat(d.donationTotal).toFixed(4)} ETH
+                          </span>
                         </span>
                       </li>
                     ))}
