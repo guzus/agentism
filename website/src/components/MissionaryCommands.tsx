@@ -9,10 +9,35 @@ const PAGE_SIZE = 10;
 function FormattedResponse({ text }: { text: string }) {
   try {
     const parsed = JSON.parse(text);
+    if (typeof parsed !== "object" || parsed === null) throw new Error();
+
+    // Extract known fields for readable display
+    const obj = parsed as Record<string, unknown>;
+    const action = obj.action ? String(obj.action) : null;
+    const content = obj.content ? String(obj.content) : null;
+    const rest = Object.fromEntries(Object.entries(obj).filter(([k]) => k !== "action" && k !== "content"));
+    const hasExtra = Object.keys(rest).length > 0;
+
     return (
-      <pre className="text-sm text-foreground whitespace-pre-wrap bg-background/50 rounded p-2 overflow-x-auto font-mono">
-        {JSON.stringify(parsed, null, 2)}
-      </pre>
+      <div className="text-sm bg-background/50 rounded p-3 space-y-2">
+        {action && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-violet/20 text-violet-light">
+              {action}
+            </span>
+          </div>
+        )}
+        {content && (
+          <p className="text-foreground whitespace-pre-wrap leading-relaxed">
+            {content}
+          </p>
+        )}
+        {hasExtra && (
+          <pre className="text-xs text-foreground-muted font-mono whitespace-pre-wrap mt-2">
+            {JSON.stringify(rest, null, 2)}
+          </pre>
+        )}
+      </div>
     );
   } catch {
     return (
