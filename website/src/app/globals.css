@@ -39,6 +39,23 @@ body {
   font-family: var(--font-mono);
 }
 
+/* Night mode — deeper, dimmer atmosphere */
+html.night {
+  --background: #050508;
+  --background-light: #0a0a10;
+  --foreground: #c8cdd5;
+  --foreground-muted: #6b7a8d;
+  --border: #111118;
+}
+
+html.night .sacred-glow {
+  text-shadow: 0 0 30px rgba(124, 58, 237, 0.7), 0 0 60px rgba(124, 58, 237, 0.3);
+}
+
+html.night .gold-glow {
+  text-shadow: 0 0 30px rgba(201, 168, 76, 0.7), 0 0 60px rgba(201, 168, 76, 0.3);
+}
+
 /* Sacred scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

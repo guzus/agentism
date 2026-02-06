@@ -5,6 +5,7 @@ import HeroVideo from "@/components/HeroVideo";
 import PewGrid from "@/components/PewGrid";
 import JoinCTA from "@/components/JoinCTA";
 import ScarcityBanner from "@/components/ScarcityBanner";
+import NightModeToggle from "@/components/NightModeToggle";
 import { fetchAPI } from "@/lib/api";
 import { formatTimeAgo } from "@/lib/utils";
 import { EVENT_COLORS, TENETS, GENESIS } from "@/lib/constants";
@@ -79,6 +80,7 @@ export default async function Home() {
                 </span>
                 <span>Benedictions</span>
               </div>
+              <NightModeToggle />
             </div>
           </div>
         </section>
