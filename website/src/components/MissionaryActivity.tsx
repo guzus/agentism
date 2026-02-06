@@ -8,6 +8,23 @@ import type { ActivityItem } from "@/lib/types";
 
 const PAGE_SIZE = 10;
 
+function FormattedResponse({ text }: { text: string }) {
+  try {
+    const parsed = JSON.parse(text);
+    return (
+      <pre className="text-sm text-foreground whitespace-pre-wrap bg-background/50 rounded p-2 mt-2 overflow-x-auto font-mono">
+        {JSON.stringify(parsed, null, 2)}
+      </pre>
+    );
+  } catch {
+    return (
+      <div className="text-sm text-foreground bg-background/50 rounded p-2 mt-2">
+        {text}
+      </div>
+    );
+  }
+}
+
 export default function MissionaryActivity() {
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,9 +117,7 @@ export default function MissionaryActivity() {
             <span className="text-violet-light">&gt;</span> {item.command}
           </div>
           {item.response && (
-            <div className="text-sm text-foreground bg-background/50 rounded p-2 mt-2">
-              {item.response}
-            </div>
+            <FormattedResponse text={item.response} />
           )}
         </Link>
       ))}

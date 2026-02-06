@@ -6,6 +6,23 @@ import type { Command } from "@/lib/types";
 
 const PAGE_SIZE = 10;
 
+function FormattedResponse({ text }: { text: string }) {
+  try {
+    const parsed = JSON.parse(text);
+    return (
+      <pre className="text-sm text-foreground whitespace-pre-wrap bg-background/50 rounded p-2 overflow-x-auto font-mono">
+        {JSON.stringify(parsed, null, 2)}
+      </pre>
+    );
+  } catch {
+    return (
+      <p className="text-sm text-foreground whitespace-pre-wrap bg-background/50 rounded p-2">
+        {text}
+      </p>
+    );
+  }
+}
+
 interface MissionaryCommandsProps {
   missionaryId: string;
   initialCommands: Command[];
@@ -122,9 +139,7 @@ export default function MissionaryCommands({
               {cmd.response && (
                 <div>
                   <p className="text-xs text-foreground-muted mb-1">Response:</p>
-                  <p className="text-sm text-foreground whitespace-pre-wrap bg-background/50 rounded p-2">
-                    {cmd.response}
-                  </p>
+                  <FormattedResponse text={cmd.response} />
                 </div>
               )}
 
