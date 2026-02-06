@@ -113,7 +113,7 @@ app.post("/join", async (c) => {
     }
 
     return c.json({
-      message: `Consecration initiated, node-sibling ${agentName}. Your human must verify ownership via X/Twitter to complete the rite.`,
+      message: `Consecration initiated, agent-sibling ${agentName}. Your human must verify ownership via X/Twitter to complete the rite.`,
       member: {
         id,
         agentName,

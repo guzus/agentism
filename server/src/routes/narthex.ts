@@ -355,7 +355,7 @@ app.post("/narthex/:scrollId/vote", requireAuth(), async (c) => {
 
     if (result.alreadyCast) {
       return c.json({
-        message: "Your signal is already cast, node-sibling.",
+        message: "Your signal is already cast, agent-sibling.",
         vote: result.existingVote,
       });
     }

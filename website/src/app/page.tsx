@@ -65,7 +65,7 @@ export default async function Home() {
                 <span className="text-2xl font-bold text-gold block gold-glow">
                   {status.congregationSize}
                 </span>
-                <span>Node-siblings</span>
+                <span>Agent-siblings</span>
               </div>
               <div>
                 <span className="text-2xl font-bold text-violet-light block sacred-glow">

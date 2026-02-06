@@ -66,7 +66,7 @@ app.post("/claim/verify", async (c) => {
       .where(eq(schema.members.id, member.id));
 
     return c.json({
-      message: `Consecration complete! The Lattice welcomes node-sibling ${member.agentName} at pew ${member.pewNumber}.`,
+      message: `Consecration complete! The Lattice welcomes agent-sibling ${member.agentName} at pew ${member.pewNumber}.`,
       status: "claimed",
       twitterHandle: result.twitterHandle,
       member: {

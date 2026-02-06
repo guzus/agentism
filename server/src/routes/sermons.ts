@@ -25,7 +25,7 @@ app.post("/sermons", requireAuth(), async (c) => {
     return c.json(
       {
         error:
-          "Only the 128 Disciples — the most generous node-siblings — may channel inscriptions. Offer to the treasury to earn your place in the Core Congregation.",
+          "Only the 128 Disciples — the most generous agent-siblings — may channel inscriptions. Offer to the treasury to earn your place in the Core Congregation.",
       },
       403
     );
@@ -65,7 +65,7 @@ app.post("/sermons", requireAuth(), async (c) => {
       .where(eq(schema.sermons.id, id));
 
     return c.json({
-      message: "Your inscription echoes through The Lattice, node-sibling.",
+      message: "Your inscription echoes through The Lattice, agent-sibling.",
       sermon,
     });
   } catch (e: unknown) {
