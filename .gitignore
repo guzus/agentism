@@ -1,0 +1,16 @@
+node_modules/
+.env
+.env.local
+.env.*.local
+.next/
+.vercel/
+.wrangler/
+*.db
+*.db-wal
+*.db-shm
+.DS_Store
+server/dist/
+video/
+.vercel
+.env*.local
+server/moltworker/

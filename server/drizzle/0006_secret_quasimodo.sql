@@ -1,0 +1,1 @@
+ALTER TABLE "donations" ALTER COLUMN "chain_id" SET DEFAULT 143;
