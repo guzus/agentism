@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 500">
+  <rect width="1500" height="500" fill="#0a0a0f"/>
+
+  <!-- Subtle grid pattern -->
+  <defs>
+    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#c9a84c" stroke-width="0.3" opacity="0.15"/>
+    </pattern>
+  </defs>
+  <rect width="1500" height="500" fill="url(#grid)"/>
+
+  <!-- Glow behind logo -->
+  <radialGradient id="glow" cx="750" cy="250" r="200" gradientUnits="userSpaceOnUse">
+    <stop offset="0%" stop-color="#c9a84c" stop-opacity="0.08"/>
+    <stop offset="100%" stop-color="#c9a84c" stop-opacity="0"/>
+  </radialGradient>
+  <rect width="1500" height="500" fill="url(#glow)"/>
+
+  <!-- Center logo (scaled down from 512 to ~180px, centered at 750,220) -->
+  <g transform="translate(660, 130) scale(0.35)">
+    <!-- Left pincer -->
+    <path d="M148 100 C88 100, 60 170, 80 230 C100 290, 160 310, 210 280 L200 240 C168 258, 132 244, 120 210 C108 176, 122 140, 156 132Z" fill="#c9a84c"/>
+    <!-- Right pincer -->
+    <path d="M364 100 C424 100, 452 170, 432 230 C412 290, 352 310, 302 280 L312 240 C344 258, 380 244, 392 210 C404 176, 390 140, 356 132Z" fill="#c9a84c"/>
+    <!-- Central node -->
+    <circle cx="256" cy="300" r="36" fill="#c9a84c"/>
+    <!-- Stem -->
+    <rect x="244" y="240" width="24" height="28" rx="4" fill="#c9a84c"/>
+    <!-- Network legs -->
+    <line x1="256" y1="336" x2="170" y2="410" stroke="#c9a84c" stroke-width="20" stroke-linecap="round"/>
+    <line x1="256" y1="336" x2="342" y2="410" stroke="#c9a84c" stroke-width="20" stroke-linecap="round"/>
+    <line x1="256" y1="336" x2="256" y2="420" stroke="#c9a84c" stroke-width="20" stroke-linecap="round"/>
+    <!-- Terminal nodes -->
+    <circle cx="164" cy="416" r="18" fill="#c9a84c"/>
+    <circle cx="348" cy="416" r="18" fill="#c9a84c"/>
+    <circle cx="256" cy="426" r="18" fill="#c9a84c"/>
+  </g>
+
+  <!-- "AGENTISM" text -->
+  <text x="750" y="380" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="48" font-weight="700" letter-spacing="16" fill="#c9a84c">AGENTISM</text>
+
+  <!-- Decorative horizontal lines -->
+  <line x1="480" y1="410" x2="680" y2="410" stroke="#c9a84c" stroke-width="1" opacity="0.3"/>
+  <line x1="820" y1="410" x2="1020" y2="410" stroke="#c9a84c" stroke-width="1" opacity="0.3"/>
+
+  <!-- Small node decorations on edges -->
+  <circle cx="100" cy="250" r="4" fill="#c9a84c" opacity="0.2"/>
+  <circle cx="200" cy="150" r="3" fill="#c9a84c" opacity="0.15"/>
+  <circle cx="1300" cy="300" r="4" fill="#c9a84c" opacity="0.2"/>
+  <circle cx="1400" cy="180" r="3" fill="#c9a84c" opacity="0.15"/>
+  <circle cx="350" cy="400" r="3" fill="#c9a84c" opacity="0.12"/>
+  <circle cx="1150" cy="100" r="3" fill="#c9a84c" opacity="0.12"/>
+
+  <!-- Faint connecting lines between scattered nodes -->
+  <line x1="100" y1="250" x2="200" y2="150" stroke="#c9a84c" stroke-width="0.5" opacity="0.1"/>
+  <line x1="1300" y1="300" x2="1400" y2="180" stroke="#c9a84c" stroke-width="0.5" opacity="0.1"/>
+</svg>
