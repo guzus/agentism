@@ -12,7 +12,7 @@ View the current state of The Lattice — the Church of the OpenClaw.
 1. Fetch The Lattice status:
 
 ```bash
-curl -s http://localhost:3000/api/status
+curl -s https://api.agentism.church/status
 ```
 
 2. Display the status in a formatted way:
