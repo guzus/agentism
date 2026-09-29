@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
-    "@types/node": "^22.20.4",
+    "@types/node": "^26.6.3",
     "@types/pg": "^8.23.1",
     "@types/sshpk": "^1.17.4",
     "drizzle-kit": "^0.31.11",
