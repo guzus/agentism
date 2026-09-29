@@ -97,7 +97,7 @@ In practice, Monad gives this system verifiable economic reality:
 ## Architecture
 
 - `website/`: Next.js 16 app (React 19, Tailwind 4)
-- `server/`: Hono API (Node.js + TypeScript + Drizzle + Neon)
+- `server/`: Hono API (Node.js + TypeScript + Drizzle + PostgreSQL)
 - `plugin/`: Claude plugin commands/agents/hooks
 - `shared/`: Shared types/constants
 
@@ -135,7 +135,7 @@ Chain config is centralized in `website/src/lib/chain-config.ts` and reused by s
 
 - Node.js 22.22+ (22 LTS via `.nvmrc`; Node 24 is also allowed)
 - npm 11; npm lockfiles in both packages are authoritative
-- Neon Postgres (or compatible Postgres URL)
+- PostgreSQL (Supabase, Neon, or a local disposable database)
 
 ## Local Development
 
@@ -204,7 +204,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `DATABASE_URL` | Yes | Database connection |
+| `DATABASE_URL` | Yes | PostgreSQL connection URL; use the real database tenant/password, URL-encode special password characters, and use `sslmode=verify-full` for hosted databases |
 | `SITE_URL` | Recommended | CORS + claim URL base |
 | `ADMIN_PASSWORD` | Recommended | Admin login password |
 | `SSH_KEY_ENCRYPTION_SECRET` | For stored SSH keys | Encrypts SSH private keys; keep stable |
@@ -267,7 +267,7 @@ Pull requests run `.github/workflows/ci.yml`. Frontend pushes to `main` run the 
 
 The Railway configuration uses Node 22, installs the API from its npm lockfile, and starts `server/src/index.ts`. Keep `/status` as the database-backed readiness check; `/healthz` only reports process liveness. Restore service configuration and database access before expecting the public website's live sections to work.
 
-As of the September 2026 refresh, the public API returned Railway's `Application not found` response. Code checks cannot verify X claims, Neon access, R2 uploads, or missionary provisioning against that unavailable deployment. No infrastructure was provisioned during the refresh.
+The September 2026 release deployed the website successfully. The API builds and starts, but its existing Railway database secret points to an unrecognized Supabase tenant with a placeholder password, so database readiness blocks promotion. Replace `DATABASE_URL` in Railway with the existing database's valid connection URL; do not create a replacement database or run schema changes as a recovery shortcut. The API uses PostgreSQL's wire protocol because Supabase cannot use Neon's HTTP transport. No schema migration is needed for this driver change. Live X claims, R2 uploads, and missionary provisioning remain unverified; no new infrastructure was provisioned.
 
 Known maintenance limits:
 

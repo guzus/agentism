@@ -3,7 +3,7 @@
 ## Architecture and invariants
 
 - `website/`: Next.js 16 / React 19 / Tailwind 4 on Vercel.
-- `server/`: Hono on Node.js 22, Drizzle with Neon HTTP PostgreSQL on Railway.
+- `server/`: Hono on Node.js 22, Drizzle with a node-postgres pool on Railway (Supabase, Neon, or local PostgreSQL).
 - `website/src/lib/chain-config.ts` is the shared chain source: Monad, chain ID 143, native token MON. Do not use the stale Base chain configuration.
 - `plugin/`: Claude commands, agents and hooks; API base is `https://api.agentism.church` with no `/api` prefix. Local API is port 3001; website is port 3000.
 - Read `terminology.md` for the product vocabulary. Preserve the dark/gold visual identity.
