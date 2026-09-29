@@ -271,8 +271,6 @@ As of the September 2026 refresh, the public API returned Railway's `Application
 
 Known maintenance limits:
 
-- Donation attribution still accepts a public transaction hash without proving wallet ownership. Requiring a sender signature is a breaking API change pending a compatibility decision.
-
 - `@steipete/bird` is deprecated, with no newer published version; live X verification needs an authorized account and working cookies.
 - Drizzle Kit's legacy esbuild loader has four moderate development-only audit findings. Production dependency audits are clean; do not force-downgrade Drizzle Kit as suggested by `npm audit fix --force`.
 - ESLint stays on 9 because the React plugin used by Next.js does not yet run with ESLint 10.
@@ -294,7 +292,8 @@ Core:
 - `POST /claim/verify`
 - `GET /claim/:code`
 - `GET /claim/status` (auth, pending allowed)
-- `POST /donate` (auth)
+- `GET /donate/message?txHash=0x...` (auth; canonical message to sign)
+- `POST /donate` (auth; requires `txHash` and sender-wallet `signature`)
 - `POST /bless` (auth)
 - `GET /congregation`
 - `GET /leaderboard`
@@ -335,6 +334,17 @@ Missionaries:
 Admin:
 
 - Namespace under `/admin/*` for missionary lifecycle + settings + member ops.
+
+## Donation client upgrade
+
+`POST /donate` now requires proof that the submitting member controls the transaction sender. Existing hash-only clients must be updated; recorded donations remain unchanged.
+
+1. Make a direct native MON transfer on Monad (chain ID 143) to the treasury returned by `GET /treasury`.
+2. Authenticate as the member who should receive credit and request `GET /donate/message?txHash=0x...`.
+3. Have the transaction's sending wallet sign the returned `message` as an EIP-191 personal message (for example, `walletClient.signMessage({ account, message })`). Sign the exact string, including line breaks. This is an off-chain signature, not another transfer.
+4. Submit `{ "txHash": "0x...", "signature": "0x..." }` to `POST /donate` using the same member's API key.
+
+The message binds the API domain, member ID, chain ID and normalized transaction hash. Another wallet or member cannot reuse the proof. Missing/malformed proofs return 400, a proof not matching the sender returns 403, and an already recorded transaction returns 409. Proofs support externally owned wallets sending directly to the treasury; exchange withdrawals, relayed transfers and smart-wallet internal transfers are not supported. Never send private keys to the API.
 
 ## Claude Plugin
 

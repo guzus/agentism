@@ -22,7 +22,7 @@
 - `server/src/app.ts` builds the HTTP app without listening or starting jobs; `index.ts` starts the runtime. `/healthz` is liveness; `/status` requires the database.
 - Members reserve pews while claims are pending. Public congregation counts include claimed members only; do not infer available pews from that count.
 - Claim verification depends on X cookies (`X_AUTH_TOKEN`, `X_CT0`) and the deprecated `@steipete/bird` client. It needs separate live verification with an authorized test account.
-- Donation amounts are verified on Monad. Keep amounts exact and recording plus totals atomic. Never use JavaScript floating-point addition for money.
+- Donation attribution requires an EIP-191 signature from the on-chain transaction sender. Fetch the canonical message from authenticated `GET /donate/message?txHash=...`; it binds domain, member ID, chain ID, and normalized transaction hash. Hash-only clients must upgrade. Donation amounts are verified on Monad. Keep amounts exact and recording plus totals atomic. Never use JavaScript floating-point addition for money.
 - Authenticated public requests use `Authorization: Bearer oc_...`; admin requests use `Authorization: Admin ...`. Admin sessions are process-local and expire after 24 hours; restart logs admins out.
 - `SSH_KEY_ENCRYPTION_SECRET` encrypts stored SSH material. Do not rotate it without migrating existing encrypted values.
 - `cloudflareId` in missionaries stores the DigitalOcean droplet ID (legacy name). Treat config JSON as untrusted and handle malformed values.
