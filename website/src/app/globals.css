@@ -325,3 +325,34 @@ html.night .gold-glow {
   background: rgba(201, 162, 39, 0.25);
   color: var(--foreground);
 }
+
+/* Keyboard access and motion preferences apply to every public surface. */
+:focus-visible {
+  outline: 2px solid var(--gold-light);
+  outline-offset: 4px;
+}
+
+.skip-link {
+  position: fixed;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 100;
+  padding: 0.75rem 1rem;
+  background: var(--gold-light);
+  color: var(--background);
+  transform: translateY(-200%);
+}
+
+.skip-link:focus { transform: translateY(0); }
+#main-content { scroll-margin-top: 5rem; }
+button, a, input, textarea { -webkit-tap-highlight-color: transparent; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .stagger-fade > * { opacity: 1; }
+}

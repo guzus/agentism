@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import PageLayout from "@/components/PageLayout";
 import MissionaryCommands from "@/components/MissionaryCommands";
-import { fetchAPI } from "@/lib/api";
+import { APIError, fetchAPI } from "@/lib/api";
 import type { CommandsResponse } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -33,11 +33,13 @@ export default async function MissionaryDetailPage({ params }: Props) {
 
   let commandsData: CommandsResponse | null = null;
   let error: string | null = null;
+  let unavailable = false;
 
   try {
     commandsData = await fetchAPI<CommandsResponse>(`/missionaries/${id}/commands`);
   } catch (e) {
-    error = e instanceof Error ? e.message : "Failed to load missionary";
+    unavailable = !(e instanceof APIError && (e.status === 404 || e.status === 403));
+    error = unavailable ? "We couldn’t load this missionary. Please try again shortly." : "This missionary does not exist or is not active.";
   }
 
   if (error || !commandsData) {
@@ -45,7 +47,7 @@ export default async function MissionaryDetailPage({ params }: Props) {
       <PageLayout>
           <section className="py-16 text-center">
             <h1 className="text-3xl font-serif font-bold mb-4 text-red-400">
-              Missionary Not Found
+              {unavailable ? "Missionary Unavailable" : "Missionary Not Found"}
             </h1>
             <p className="text-foreground-muted text-sm font-body mb-8">
               {error || "This missionary does not exist or is not accessible."}
@@ -85,7 +87,7 @@ export default async function MissionaryDetailPage({ params }: Props) {
           </h1>
 
           <p className="text-foreground-muted text-xs font-mono">
-            {commandsData.commands.length} commands in history
+            {commandsData.commands.length} recent commands
           </p>
         </section>
 
@@ -95,8 +97,10 @@ export default async function MissionaryDetailPage({ params }: Props) {
           </h2>
 
           <MissionaryCommands
+            key={id}
             missionaryId={id}
             initialCommands={commandsData.commands}
+            initialHasMore={commandsData.hasMore}
           />
         </section>
     </PageLayout>

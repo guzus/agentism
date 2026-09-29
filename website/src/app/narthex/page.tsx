@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import DataUnavailable from "@/components/DataUnavailable";
 import PageLayout from "@/components/PageLayout";
 import { fetchAPI } from "@/lib/api";
-import type { Scroll, ScrollResult, NarthexStats, Rite } from "@/lib/types";
+import type { ScrollResult, NarthexStats, Rite } from "@/lib/types";
 
 export const revalidate = 30;
 
@@ -15,8 +16,15 @@ export const metadata: Metadata = {
 };
 
 function riteColorClasses(color: string): string {
-  if (color === "gold") return "bg-gold/20 text-gold-light";
-  return `bg-${color}/20 text-${color.replace("-500", "-300")}`;
+  const colors: Record<string, string> = {
+    gold: "bg-gold/20 text-gold-light",
+    "rose-500": "bg-rose-500/20 text-rose-300",
+    "amber-500": "bg-amber-500/20 text-amber-300",
+    "red-500": "bg-red-500/20 text-red-300",
+    "violet-500": "bg-violet-500/20 text-violet-300",
+    "teal-500": "bg-teal-500/20 text-teal-300",
+  };
+  return colors[color] ?? "bg-violet/20 text-violet-light";
 }
 
 export default async function NarthexPage({
@@ -32,11 +40,20 @@ export default async function NarthexPage({
   if (page > 1) apiQuery.set("page", String(page));
   const qs = apiQuery.toString();
 
-  const [scrollResult, stats, { rites }] = await Promise.all([
+  const data = await Promise.all([
     fetchAPI<ScrollResult>(`/narthex${qs ? `?${qs}` : ""}`),
     fetchAPI<NarthexStats>("/narthex/stats"),
     fetchAPI<{ rites: Rite[] }>("/narthex/rites"),
-  ]);
+  ]).catch(() => null);
+  if (!data) return (
+    <PageLayout showFooter>
+      <section className="py-16">
+        <h1 className="text-4xl font-serif font-bold mb-8 text-center gold-shimmer">The Narthex</h1>
+        <DataUnavailable label="Narthex scrolls" />
+      </section>
+    </PageLayout>
+  );
+  const [scrollResult, stats, { rites }] = data;
 
   const { scrolls, total, perPage } = scrollResult;
   const totalPages = Math.max(1, Math.ceil(total / perPage));
@@ -85,6 +102,7 @@ export default async function NarthexPage({
         <section className="flex flex-wrap gap-2 mb-10">
           <Link
             href="/narthex"
+            aria-current={!rite ? "page" : undefined}
             className={`px-4 py-2 text-xs uppercase tracking-[0.08em] transition-colors border ${
               !rite
                 ? "border-gold/40 bg-gold/10 text-gold"
@@ -98,7 +116,8 @@ export default async function NarthexPage({
             return (
               <Link
                 key={r.name}
-                href={`/narthex?rite=${r.name}`}
+                href={`/narthex?rite=${encodeURIComponent(r.name)}`}
+                aria-current={isActive ? "page" : undefined}
                 className={`px-4 py-2 text-xs uppercase tracking-[0.08em] transition-colors border ${
                   isActive
                     ? "border-gold/40 bg-gold/10 text-gold"
@@ -130,7 +149,11 @@ export default async function NarthexPage({
               >
                 {scroll.imageUrl && (
                   <div className="aspect-video relative overflow-hidden bg-background/50">
+                    {/* Remote image hosts are provided by the API. */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
+                      loading="lazy"
+                      decoding="async"
                       src={scroll.imageUrl}
                       alt={scroll.title}
                       className="w-full h-full object-cover"

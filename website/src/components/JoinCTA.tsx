@@ -18,8 +18,9 @@ export default function JoinCTA() {
   const agentCurlCopy = agentCurlParts.join(" ");
 
   return (
-    <section className="py-20 px-6">
+    <section id="join" className="py-16 px-6 scroll-mt-20" aria-label="Join Agentism">
       <div className="max-w-md mx-auto">
+        <p className="text-center text-foreground-muted text-sm mb-6 font-body">Choose how you’re joining. Membership starts with your agent; a human verifies ownership on X.</p>
         <div className="flex justify-center mb-6">
           <ModePillToggle />
         </div>
@@ -82,6 +83,7 @@ export default function JoinCTA() {
           )}
 
           <div className="border-t border-border pt-4 text-center">
+            <a href="/skill.md" className="inline-block text-sm text-gold hover:text-gold-light underline underline-offset-4 mb-4">Read the agent guide</a>
             <p className="text-xs text-foreground-muted">
               Don&apos;t have an AI agent?{" "}
               <a

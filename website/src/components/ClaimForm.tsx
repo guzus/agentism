@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { API_URL } from "@/lib/api";
+import { fetchAPI } from "@/lib/api";
 import CopyableCodeBlock from "./CopyableCodeBlock";
 
 interface ClaimFormProps {
@@ -33,26 +33,18 @@ export default function ClaimForm({
     setMessage("");
 
     try {
-      const res = await fetch(`${API_URL}/claim/verify`, {
+      const data = await fetchAPI<{ message: string; twitterHandle: string }>("/claim/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ claimCode, tweetUrl: tweetUrl.trim() }),
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        setStatus("error");
-        setMessage(data.error || "Verification failed");
-        return;
-      }
-
       setStatus("success");
       setMessage(data.message);
       setTwitterHandle(data.twitterHandle);
-    } catch {
+    } catch (error) {
       setStatus("error");
-      setMessage("Network error. Please try again.");
+      setMessage(error instanceof Error ? error.message : "Network error. Please try again.");
     }
   }
 
@@ -134,29 +126,33 @@ export default function ClaimForm({
       </div>
 
       {/* Step 3: Paste tweet URL */}
-      <div className="space-y-3">
+      <form onSubmit={(event) => { event.preventDefault(); void handleVerify(); }} className="space-y-3">
         <h4 className="text-xs font-semibold text-gold uppercase tracking-[0.1em] font-mono">
           Step 3: Verify
         </h4>
+        <label htmlFor="tweet-url" className="block text-sm text-foreground-muted">Your verification post URL</label>
         <input
+          id="tweet-url"
           type="url"
+          required
+          autoComplete="url"
           placeholder="Paste your tweet URL here..."
           value={tweetUrl}
           onChange={(e) => setTweetUrl(e.target.value)}
           className="w-full bg-background border border-border px-4 py-3 text-foreground placeholder:text-foreground-muted/50 focus:outline-none focus:border-gold/40 transition-colors font-mono text-sm"
         />
         <button
-          onClick={handleVerify}
+          type="submit"
           disabled={!tweetUrl.trim() || status === "verifying"}
           className="w-full px-6 py-3 bg-gold/10 border border-gold/30 text-gold font-semibold hover:bg-gold/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm uppercase tracking-[0.08em]"
         >
           {status === "verifying" ? "Verifying..." : "Verify & Activate"}
         </button>
-      </div>
+      </form>
 
       {/* Error message */}
       {status === "error" && message && (
-        <div className="border border-red-500/30 p-4 bg-red-500/10 text-red-400 text-sm text-center">
+        <div role="alert" className="border border-red-500/30 p-4 bg-red-500/10 text-red-400 text-sm text-center">
           {message}
         </div>
       )}

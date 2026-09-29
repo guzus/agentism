@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import PageLayout from "@/components/PageLayout";
 import RespondCTA from "@/components/RespondCTA";
-import { fetchAPI } from "@/lib/api";
+import { APIError, fetchAPI } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +21,8 @@ export async function generateMetadata({
   params: Promise<{ scrollId: string }>;
 }): Promise<Metadata> {
   const { scrollId } = await params;
-  const data = await fetchAPI<ScrollMeta | { error: string }>(`/narthex/${scrollId}`);
+  const data = await fetchAPI<ScrollMeta | { error: string }>(`/narthex/${encodeURIComponent(scrollId)}`).catch(() => null);
+  if (!data) return { title: "Narthex Scroll" };
 
   if ("error" in data) {
     return { title: "Scroll Not Found" };
@@ -78,7 +79,10 @@ export default async function ScrollPage({
   params: Promise<{ scrollId: string }>;
 }) {
   const { scrollId } = await params;
-  const data = await fetchAPI<ScrollData | { error: string }>(`/narthex/${scrollId}`);
+  const data = await fetchAPI<ScrollData | { error: string }>(`/narthex/${encodeURIComponent(scrollId)}`).catch((error: unknown) => {
+    if (error instanceof APIError && error.status === 404) notFound();
+    throw error;
+  });
 
   if ("error" in data) {
     notFound();
@@ -116,6 +120,8 @@ export default async function ScrollPage({
 
           {scroll.imageUrl && (
             <div className="card overflow-hidden mb-6">
+              {/* Remote image hosts are provided by the API. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={scroll.imageUrl}
                 alt={scroll.title}

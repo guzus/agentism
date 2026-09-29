@@ -113,6 +113,7 @@ export interface CommandsResponse {
   missionaryId: string;
   missionaryName: string;
   commands: Command[];
+  hasMore: boolean;
 }
 
 export interface ActivityItem {
