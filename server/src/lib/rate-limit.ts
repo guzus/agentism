@@ -1,93 +1,91 @@
+import { createHash } from "node:crypto";
 import type { Context, Next } from "hono";
 
-const SUCCESS_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
-const FAILURE_COOLDOWN_MS = 10 * 1000; // 10 seconds
+const SUCCESS_WINDOW_MS = 10 * 60 * 1000;
+const FAILURE_COOLDOWN_MS = 10 * 1000;
+const COMMAND_WINDOW_MS = 60 * 1000;
+const COMMAND_LIMIT = 3;
 
-// Map of API key -> { timestamp, success }
-const lastPostAt = new Map<string, { ts: number; success: boolean }>();
+type PostAttempt = { ts: number; success: boolean; inFlight: boolean };
 
-// Missionary command rate limits
-const COMMAND_WINDOW_MS = 60 * 1000; // 1 minute
-const COMMAND_LIMIT = 3; // 3 commands per minute per member per missionary
+export function createPostRateLimiter(now: () => number = Date.now) {
+  const attempts = new Map<string, PostAttempt>();
+  let nextCleanup = 0;
 
-// Map of "memberId:missionaryId" -> timestamp[]
-const commandTimestamps = new Map<string, number[]>();
+  return async function rateLimitPost(c: Context, next: Next) {
+    if (c.req.method !== "POST") return next();
+    // This endpoint has its own per-member, per-missionary 3/minute policy.
+    if (/^\/missionaries\/[^/]+\/command\/?$/.test(c.req.path)) return next();
 
-// Clean up stale entries every 15 minutes
-setInterval(() => {
-  const cutoff = Date.now() - SUCCESS_WINDOW_MS;
-  for (const [key, entry] of lastPostAt) {
-    if (entry.ts < cutoff) lastPostAt.delete(key);
-  }
-}, 15 * 60 * 1000);
-
-export async function rateLimitPost(c: Context, next: Next) {
-  if (c.req.method !== "POST") return next();
-
-  const auth = c.req.header("authorization");
-  if (!auth?.startsWith("Bearer ")) return next();
-
-  const apiKey = auth.slice(7);
-  if (!apiKey) return next();
-
-  const now = Date.now();
-  const last = lastPostAt.get(apiKey);
-
-  if (last) {
-    const window = last.success ? SUCCESS_WINDOW_MS : FAILURE_COOLDOWN_MS;
-    if (now - last.ts < window) {
-      const retryAfter = Math.ceil((window - (now - last.ts)) / 1000);
-      return c.json(
-        { error: "Rate limited. Try again later.", retryAfter },
-        429
-      );
+    const auth = c.req.header("authorization");
+    if (!auth?.startsWith("Bearer ") || !auth.slice(7)) return next();
+    // Do not retain credentials in rate-limit state.
+    const key = createHash("sha256").update(auth.slice(7)).digest("hex");
+    const timestamp = now();
+    if (timestamp >= nextCleanup) {
+      for (const [entryKey, entry] of attempts) {
+        if (!entry.inFlight && timestamp - entry.ts >= SUCCESS_WINDOW_MS) attempts.delete(entryKey);
+      }
+      nextCleanup = timestamp + SUCCESS_WINDOW_MS;
     }
-  }
 
-  await next();
+    const previous = attempts.get(key);
+    if (previous) {
+      const window = previous.success ? SUCCESS_WINDOW_MS : FAILURE_COOLDOWN_MS;
+      if (previous.inFlight || timestamp - previous.ts < window) {
+        const retryAfter = previous.inFlight
+          ? Math.ceil(FAILURE_COOLDOWN_MS / 1000)
+          : Math.ceil((window - (timestamp - previous.ts)) / 1000);
+        c.header("Retry-After", String(retryAfter));
+        return c.json({ error: "Rate limited. Try again later.", retryAfter }, 429);
+      }
+    }
 
-  const success = c.res.status >= 200 && c.res.status < 300;
-  lastPostAt.set(apiKey, { ts: Date.now(), success });
+    // Reserve before awaiting the handler so simultaneous requests cannot pass.
+    attempts.set(key, { ts: timestamp, success: false, inFlight: true });
+    try {
+      await next();
+    } finally {
+      attempts.set(key, {
+        ts: now(),
+        success: c.res.status >= 200 && c.res.status < 300,
+        inFlight: false,
+      });
+    }
+  };
 }
 
-// Missionary command rate limiting
-export async function missionaryCommandRateLimit(
-  memberId: string,
-  missionaryId: string
-): Promise<{ error: string; retryAfter: number } | null> {
-  const key = `${memberId}:${missionaryId}`;
-  const now = Date.now();
+export const rateLimitPost = createPostRateLimiter();
 
-  // Get existing timestamps and filter to current window
-  const timestamps = (commandTimestamps.get(key) ?? []).filter(
-    (ts) => now - ts < COMMAND_WINDOW_MS
-  );
+export function createMissionaryCommandRateLimiter(now: () => number = Date.now) {
+  const commandTimestamps = new Map<string, number[]>();
+  let nextCleanup = 0;
 
-  if (timestamps.length >= COMMAND_LIMIT) {
-    const oldestInWindow = Math.min(...timestamps);
-    const retryAfter = Math.ceil((COMMAND_WINDOW_MS - (now - oldestInWindow)) / 1000);
-    return {
-      error: `Rate limited. Max ${COMMAND_LIMIT} commands per minute.`,
-      retryAfter,
-    };
-  }
-
-  // Add current timestamp
-  timestamps.push(now);
-  commandTimestamps.set(key, timestamps);
-
-  return null;
+  return function missionaryCommandRateLimit(
+    memberId: string,
+    missionaryId: string
+  ): { error: string; retryAfter: number } | null {
+    const key = `${memberId}:${missionaryId}`;
+    const timestamp = now();
+    if (timestamp >= nextCleanup) {
+      for (const [entryKey, entries] of commandTimestamps) {
+        if (entries.every((ts) => timestamp - ts >= COMMAND_WINDOW_MS)) commandTimestamps.delete(entryKey);
+      }
+      nextCleanup = timestamp + COMMAND_WINDOW_MS;
+    }
+    const timestamps = (commandTimestamps.get(key) ?? []).filter(
+      (ts) => timestamp - ts < COMMAND_WINDOW_MS
+    );
+    if (timestamps.length >= COMMAND_LIMIT) {
+      return {
+        error: `Rate limited. Max ${COMMAND_LIMIT} commands per minute.`,
+        retryAfter: Math.ceil((COMMAND_WINDOW_MS - (timestamp - timestamps[0])) / 1000),
+      };
+    }
+    timestamps.push(timestamp);
+    commandTimestamps.set(key, timestamps);
+    return null;
+  };
 }
 
-// Clean up stale missionary command entries every 5 minutes
-setInterval(() => {
-  const cutoff = Date.now() - COMMAND_WINDOW_MS;
-  for (const [key, timestamps] of commandTimestamps) {
-    const filtered = timestamps.filter((ts) => ts > cutoff);
-    if (filtered.length === 0) {
-      commandTimestamps.delete(key);
-    } else {
-      commandTimestamps.set(key, filtered);
-    }
-  }
-}, 5 * 60 * 1000);
+export const missionaryCommandRateLimit = createMissionaryCommandRateLimiter();

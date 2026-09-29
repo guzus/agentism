@@ -1,110 +1,31 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { API_URL } from "@/lib/api";
+import FormattedResponse from "./FormattedResponse";
+import { useState } from "react";
+import { usePollingAPI } from "@/lib/usePollingAPI";
 import type { Command } from "@/lib/types";
 
 const PAGE_SIZE = 10;
 
-function FormattedResponse({ text }: { text: string }) {
-  try {
-    const parsed = JSON.parse(text);
-    if (typeof parsed !== "object" || parsed === null) throw new Error();
-
-    const obj = parsed as Record<string, unknown>;
-    const action = obj.action ? String(obj.action) : null;
-    const content = obj.content ? String(obj.content) : null;
-    const rest = Object.fromEntries(Object.entries(obj).filter(([k]) => k !== "action" && k !== "content"));
-    const hasExtra = Object.keys(rest).length > 0;
-
-    return (
-      <div className="text-sm bg-background/50 p-3 space-y-2">
-        {action && (
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-mono px-1.5 py-0.5 bg-violet/20 text-violet-light">
-              {action}
-            </span>
-          </div>
-        )}
-        {content && (
-          <p className="text-foreground whitespace-pre-wrap leading-relaxed font-body">
-            {content}
-          </p>
-        )}
-        {hasExtra && (
-          <pre className="text-xs text-foreground-muted font-mono whitespace-pre-wrap mt-2">
-            {JSON.stringify(rest, null, 2)}
-          </pre>
-        )}
-      </div>
-    );
-  } catch {
-    return (
-      <p className="text-sm text-foreground whitespace-pre-wrap bg-background/50 p-2 font-body">
-        {text}
-      </p>
-    );
-  }
-}
-
 interface MissionaryCommandsProps {
   missionaryId: string;
   initialCommands: Command[];
+  initialHasMore: boolean;
 }
 
 export default function MissionaryCommands({
   missionaryId,
   initialCommands,
+  initialHasMore,
 }: MissionaryCommandsProps) {
-  const [commands, setCommands] = useState<Command[]>(initialCommands);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(initialCommands.length >= PAGE_SIZE);
   const [expandedDetails, setExpandedDetails] = useState<Record<string, boolean>>({});
-
-  const fetchCommands = async (p: number) => {
-    try {
-      const res = await fetch(
-        `${API_URL}/missionaries/${missionaryId}/commands?page=${p}&limit=${PAGE_SIZE}`
-      );
-      if (res.ok) {
-        const data = await res.json();
-        const cmds = data.commands || [];
-        setCommands(cmds);
-        setHasMore(cmds.length >= PAGE_SIZE);
-      }
-    } catch {
-      // Silently fail
-    }
-  };
-
-  // Poll for updates every 5 seconds
-  useEffect(() => {
-    const interval = setInterval(() => fetchCommands(page), 15000);
-    return () => clearInterval(interval);
-  }, [missionaryId, page]);
-
-  useEffect(() => {
-    setExpandedDetails((prev) => {
-      let changed = false;
-      const next = { ...prev };
-
-      for (const cmd of commands) {
-        if (cmd.response && next[cmd.id] === undefined) {
-          next[cmd.id] = true;
-          changed = true;
-        }
-      }
-
-      return changed ? next : prev;
-    });
-  }, [commands]);
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchCommands(page);
-    setIsRefreshing(false);
-  };
+  const { data, error, loading, refreshing, refresh } = usePollingAPI<{ commands: Command[]; hasMore: boolean }>(
+    `/missionaries/${missionaryId}/commands?page=${page}&limit=${PAGE_SIZE}`,
+    { commands: initialCommands, hasMore: initialHasMore }
+  );
+  const commands = data?.commands ?? [];
+  const hasMore = data?.hasMore ?? false;
 
   const formatTime = (isoString: string) => {
     const date = new Date(isoString);
@@ -129,16 +50,17 @@ export default function MissionaryCommands({
       {/* Refresh button */}
       <div className="flex justify-end">
         <button
-          onClick={handleRefresh}
-          disabled={isRefreshing}
+          onClick={refresh}
+          disabled={refreshing}
           className="text-xs text-foreground-muted hover:text-foreground transition-colors disabled:opacity-50 font-mono uppercase tracking-[0.08em]"
         >
-          {isRefreshing ? "Refreshing..." : "Refresh"}
+          {refreshing ? "Refreshing..." : "Refresh"}
         </button>
       </div>
 
+      {error && <p role="status" className="border border-gold/20 p-4 text-sm text-gold">{error}{data ? " Showing the last successful update." : ""}</p>}
       {/* Commands list */}
-      {commands.length === 0 ? (
+      {loading ? <p role="status" className="card p-8 text-center text-foreground-muted">Loading commands…</p> : !error && commands.length === 0 ? (
         <div className="card p-8 text-center">
           <p className="text-foreground-muted font-body italic">
             No commands yet. Be the first to command this missionary.
@@ -149,7 +71,7 @@ export default function MissionaryCommands({
           {commands.map((cmd) => (
             <div key={cmd.id} className="card p-4 hover:border-gold/20 transition-all duration-300">
               {/* Command header */}
-              <div className="flex justify-between items-start mb-2">
+              <div className="flex flex-col sm:flex-row justify-between items-start gap-2 mb-2">
                 <div className="flex items-center gap-2">
                   <span className={`text-xs font-medium font-mono uppercase tracking-[0.05em] ${getStatusColor(cmd.status)}`}>
                     {cmd.status}
@@ -184,10 +106,11 @@ export default function MissionaryCommands({
                       onClick={() =>
                         setExpandedDetails((prev) => ({
                           ...prev,
-                          [cmd.id]: !prev[cmd.id],
+                          [cmd.id]: prev[cmd.id] === false,
                         }))
                       }
-                      className="text-[11px] text-foreground-muted hover:text-gold transition-colors font-mono uppercase tracking-[0.08em]"
+                      aria-expanded={expandedDetails[cmd.id] !== false}
+                      className="min-h-11 text-[11px] text-foreground-muted hover:text-gold transition-colors font-mono uppercase tracking-[0.08em]"
                     >
                       {expandedDetails[cmd.id] !== false ? "Hide Details" : "Show Details"}
                     </button>
@@ -213,16 +136,16 @@ export default function MissionaryCommands({
           {(page > 1 || hasMore) && (
             <div className="flex justify-center gap-4 pt-2">
               <button
-                onClick={() => { setPage((p) => Math.max(1, p - 1)); fetchCommands(Math.max(1, page - 1)); }}
-                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1 || refreshing}
                 className="text-xs px-4 py-2 border border-border text-foreground-muted hover:text-foreground hover:border-gold/30 transition-colors disabled:opacity-30 disabled:pointer-events-none font-mono uppercase tracking-[0.08em]"
               >
                 Previous
               </button>
               <span className="text-xs text-foreground-muted py-2 font-mono">Page {page}</span>
               <button
-                onClick={() => { setPage((p) => p + 1); fetchCommands(page + 1); }}
-                disabled={!hasMore}
+                onClick={() => setPage((p) => p + 1)}
+                disabled={!hasMore || refreshing}
                 className="text-xs px-4 py-2 border border-border text-foreground-muted hover:text-foreground hover:border-gold/30 transition-colors disabled:opacity-30 disabled:pointer-events-none font-mono uppercase tracking-[0.08em]"
               >
                 Next

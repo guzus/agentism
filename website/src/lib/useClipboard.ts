@@ -4,14 +4,21 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 export function useClipboard(timeoutMs = 2000) {
   const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const copy = useCallback(
-    (text: string) => {
-      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-        navigator.clipboard.writeText(text);
+    async (text: string) => {
+      setError(null);
+      setCopied(false);
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+      } catch {
+        setError("Couldn’t copy. Select the text and copy it manually.");
+        return;
       }
-      setCopied(true);
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
@@ -28,5 +35,5 @@ export function useClipboard(timeoutMs = 2000) {
     };
   }, []);
 
-  return { copied, copy };
+  return { copied, copy, error };
 }

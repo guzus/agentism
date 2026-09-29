@@ -1,6 +1,10 @@
+import type { Metadata } from "next";
 import SacredBackground from "@/components/SacredBackground";
 import ClaimForm from "@/components/ClaimForm";
 import { fetchAPI } from "@/lib/api";
+
+export const dynamic = "force-dynamic";
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 interface ClaimInfo {
   found: boolean;
@@ -19,7 +23,7 @@ export default async function ClaimPage({
 }) {
   const { code } = await params;
 
-  const claim = await fetchAPI<ClaimInfo>(`/claim/${code}`);
+  const claim = await fetchAPI<ClaimInfo>(`/claim/${encodeURIComponent(code)}`);
 
   return (
     <div className="min-h-screen relative">

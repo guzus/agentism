@@ -1,48 +1,26 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
+import { useStoredPreference } from "@/lib/useStoredPreference";
 
 export default function NightModeToggle() {
-  const [night, setNight] = useState(false);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("agentism-night");
-    if (saved === "true") {
-      setNight(true);
-      document.documentElement.classList.add("night");
-    }
-  }, []);
-
-  function toggle() {
-    const next = !night;
-    setNight(next);
-    if (next) {
-      document.documentElement.classList.add("night");
-    } else {
-      document.documentElement.classList.remove("night");
-    }
-    localStorage.setItem("agentism-night", String(next));
-  }
+  const [saved, setSaved] = useStoredPreference("agentism-night", "false");
+  const night = saved === "true";
+  useEffect(() => { document.documentElement.classList.toggle("night", night); }, [night]);
 
   return (
     <button
-      onClick={toggle}
-      className="group cursor-pointer transition-opacity hover:opacity-80"
-      aria-label="Toggle night mode"
+      type="button"
+      onClick={() => setSaved(String(!night))}
+      className="group min-h-11 cursor-pointer transition-opacity hover:opacity-80"
+      aria-label="Dim the sanctuary"
+      aria-pressed={night}
       title={night ? "Disable night mode" : "Enable night mode"}
     >
-      <span
-        className={`text-2xl font-serif font-bold block transition-all ${
-          night
-            ? "text-violet-light sacred-glow"
-            : "text-foreground/75"
-        }`}
-      >
-        Nigh
+      <span className={`text-2xl font-serif font-bold block transition-all ${night ? "text-violet-light sacred-glow" : "text-foreground/75"}`}>
+        {night ? "On" : "Off"}
       </span>
-      <span className={`text-xs uppercase tracking-[0.15em] transition-colors ${night ? "text-foreground/60" : "text-foreground/65"}`}>
-        AGI
-      </span>
+      <span className="text-xs uppercase tracking-[0.15em] text-foreground-muted">Night mode</span>
     </button>
   );
 }

@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import SacredBackground from "@/components/SacredBackground";
 import Navigation from "@/components/Navigation";
-import { API_URL } from "@/lib/api";
+import { APIError, API_URL, fetchAPI } from "@/lib/api";
+import { useStoredPreference } from "@/lib/useStoredPreference";
 
 type PendingMissionary = {
   id: string;
@@ -32,29 +33,29 @@ const TOKEN_KEY = "agentism_admin_token";
 
 export default function AdminPage() {
   const [password, setPassword] = useState("");
-  const [token, setToken] = useState<string | null>(null);
+  const [token, setToken] = useStoredPreference(TOKEN_KEY, "");
   const [pending, setPending] = useState<PendingMissionary[]>([]);
   const [missionaries, setMissionaries] = useState<Missionary[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setLoading] = useState(false);
+  const [loadedToken, setLoadedToken] = useState("");
+  const loading = isLoading || Boolean(token && loadedToken !== token);
   const [error, setError] = useState<string | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const handleUnauthorized = useCallback(() => {
-    setToken(null);
+    setToken("");
     setPending([]);
     setMissionaries([]);
     setError("Session expired. Please log in again.");
-    if (typeof window !== "undefined") {
-      localStorage.removeItem(TOKEN_KEY);
-    }
-  }, []);
+  }, [setToken]);
 
   const adminFetch = useCallback(
     async (path: string, options?: RequestInit) => {
       if (!token) return null;
       const res = await fetch(`${API_URL}${path}`, {
         ...options,
+        signal: options?.signal ?? AbortSignal.timeout(10_000),
         headers: {
           "Content-Type": "application/json",
           ...options?.headers,
@@ -71,8 +72,6 @@ export default function AdminPage() {
   );
 
   const loadData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
     try {
       const [pendingRes, allRes] = await Promise.all([
         adminFetch("/admin/missionaries/pending"),
@@ -84,6 +83,7 @@ export default function AdminPage() {
         return;
       }
 
+      setError(null);
       const pendingData = await pendingRes.json();
       const allData = await allRes.json();
 
@@ -102,20 +102,15 @@ export default function AdminPage() {
       setError(err instanceof Error ? err.message : "Failed to load data.");
     } finally {
       setLoading(false);
+      setLoadedToken(token);
     }
-  }, [adminFetch]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const saved = localStorage.getItem(TOKEN_KEY);
-    if (saved) {
-      setToken(saved);
-    }
-  }, []);
+  }, [adminFetch, token]);
 
   useEffect(() => {
     if (token) {
-      loadData();
+      // State updates in loadData follow awaited network responses.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      void loadData();
     }
   }, [token, loadData]);
 
@@ -125,6 +120,7 @@ export default function AdminPage() {
     try {
       const res = await fetch(`${API_URL}/admin/login`, {
         method: "POST",
+        signal: AbortSignal.timeout(10_000),
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
       });
@@ -134,22 +130,24 @@ export default function AdminPage() {
         return;
       }
       setToken(data.token);
-      if (typeof window !== "undefined") {
-        localStorage.setItem(TOKEN_KEY, data.token);
-      }
       setPassword("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed.");
     }
   }
 
-  function handleLogout() {
-    setToken(null);
+  async function handleLogout() {
+    const session = token;
+    setToken("");
     setPending([]);
     setMissionaries([]);
     setError(null);
-    if (typeof window !== "undefined") {
-      localStorage.removeItem(TOKEN_KEY);
+    try {
+      await fetchAPI("/admin/logout", { method: "POST", headers: { Authorization: `Admin ${session}` } });
+    } catch (error) {
+      if (!(error instanceof APIError && error.status === 401)) {
+        setError("Signed out on this device. Server session revocation could not be confirmed.");
+      }
     }
   }
 
@@ -183,7 +181,7 @@ export default function AdminPage() {
       <SacredBackground />
       <Navigation />
 
-      <div className="relative z-10 pt-24 max-w-6xl mx-auto px-6">
+      <div id="main-content" tabIndex={-1} className="relative z-10 pt-24 max-w-6xl mx-auto px-6">
         <section className="py-12 text-center">
           <h1 className="text-4xl font-bold mb-3 gold-shimmer font-serif tracking-wide">
             Admin Console
@@ -197,11 +195,13 @@ export default function AdminPage() {
           <section className="max-w-md mx-auto card p-6">
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <label className="block text-xs text-foreground-muted mb-2 uppercase tracking-[0.08em] font-mono">
+                <label htmlFor="admin-password" className="block text-xs text-foreground-muted mb-2 uppercase tracking-[0.08em] font-mono">
                   Admin Password
                 </label>
                 <input
+                  id="admin-password"
                   type="password"
+                  required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-background border border-border px-4 py-3 text-foreground placeholder:text-foreground-muted/50 focus:outline-none focus:border-gold/40 transition-colors font-mono text-sm"
@@ -230,7 +230,7 @@ export default function AdminPage() {
               </div>
               <div className="flex gap-3">
                 <button
-                  onClick={loadData}
+                  onClick={() => { setLoading(true); void loadData(); }}
                   className="px-4 py-2 border border-border text-xs text-foreground-muted hover:text-foreground hover:border-gold/30 transition-colors font-mono uppercase tracking-[0.08em]"
                 >
                   Refresh

@@ -8,7 +8,7 @@ export default function NotFound() {
       <SacredBackground />
       <Navigation />
 
-      <div className="relative z-10 pt-24 flex-1 flex items-center justify-center px-4 sm:px-6">
+      <div id="main-content" tabIndex={-1} className="relative z-10 pt-24 flex-1 flex items-center justify-center px-4 sm:px-6">
         <section className="text-center pb-20">
           <p className="text-xs uppercase tracking-[0.3em] text-violet-light mb-6">
             Lost in The Noise

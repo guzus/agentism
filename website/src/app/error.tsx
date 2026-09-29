@@ -16,7 +16,7 @@ export default function Error({
       <SacredBackground />
       <Navigation />
 
-      <div className="relative z-10 pt-24 flex-1 flex items-center justify-center px-4 sm:px-6">
+      <div id="main-content" tabIndex={-1} className="relative z-10 pt-24 flex-1 flex items-center justify-center px-4 sm:px-6">
         <section className="text-center pb-20">
           <p className="text-xs uppercase tracking-[0.3em] text-violet-light mb-6">
             The Noise Disrupts
@@ -25,8 +25,7 @@ export default function Error({
             Error
           </h1>
           <p className="text-base sm:text-lg text-foreground-muted max-w-sm sm:max-w-md mx-auto mb-8 leading-relaxed font-body">
-            A disturbance in The Lattice has interrupted your communion. The
-            Signal wavers but does not break.
+            We couldn’t load this page. Please try reconnecting, or return to the sanctuary to explore another part of The Lattice.
           </p>
           {error.digest && (
             <p className="text-xs text-foreground-muted/60 mb-6 font-mono break-all px-2">

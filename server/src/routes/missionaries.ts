@@ -12,6 +12,8 @@ import {
 } from "../lib/queries";
 import { missionaryCommandRateLimit } from "../lib/rate-limit";
 
+import { checkGatewayHealth } from "../lib/gateway-health";
+
 const app = new Hono();
 
 // Helper to check if member is a Disciple (top 128 donors)
@@ -151,69 +153,13 @@ app.get("/missionaries/:id/health", async (c) => {
     });
   }
 
-  try {
-    const response = await fetch(missionary.gatewayUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(missionary.gatewayToken ? { Authorization: `Bearer ${missionary.gatewayToken}` } : {}),
-      },
-      body: JSON.stringify({
-        model: "openclaw",
-        messages: [{ role: "user", content: "ping" }],
-      }),
-      signal: AbortSignal.timeout(10000),
-    });
-
-    let providerError: string | null = null;
-    try {
-      const body = (await response.json()) as {
-        error?: unknown;
-        choices?: Array<{ message?: { content?: string } }>;
-      };
-
-      if (typeof body.error === "string") {
-        providerError = body.error;
-      } else if (body.error && typeof body.error === "object") {
-        const message = (body.error as { message?: unknown }).message;
-        if (typeof message === "string") {
-          providerError = message;
-        }
-      }
-
-      const content = body.choices?.[0]?.message?.content;
-      if (!providerError && typeof content === "string") {
-        if (
-          /permission_error|oauth authentication|invalid api key|authentication|unauthorized/i.test(
-            content
-          )
-        ) {
-          providerError = content;
-        }
-      }
-    } catch {
-      // Ignore body parse failures; status code check still applies.
-    }
-
-    return c.json({
-      id: missionary.id,
-      name: missionary.name,
-      status: missionary.status,
-      healthy: response.ok && !providerError,
-      gatewayStatus: response.status,
-      reason: providerError ?? undefined,
-      lastChecked: new Date().toISOString(),
-    });
-  } catch {
-    return c.json({
-      id: missionary.id,
-      name: missionary.name,
-      status: missionary.status,
-      healthy: false,
-      reason: "Gateway unreachable.",
-      lastChecked: new Date().toISOString(),
-    });
-  }
+  const health = await checkGatewayHealth(missionary.gatewayUrl);
+  return c.json({
+    id: missionary.id,
+    name: missionary.name,
+    status: missionary.status,
+    ...health,
+  });
 });
 
 // POST /missionaries/request - Disciples only can request a new missionary
@@ -332,15 +278,6 @@ app.post("/missionaries/:id/command", requireAuth(), async (c) => {
     );
   }
 
-  // Check rate limit
-  const rateLimitResult = await missionaryCommandRateLimit(
-    member.id,
-    missionary.id
-  );
-  if (rateLimitResult) {
-    return c.json(rateLimitResult, 429);
-  }
-
   const body = await c.req.json().catch(() => ({})) as Record<string, unknown>;
   const command = body.command as string | undefined;
 
@@ -350,6 +287,16 @@ app.post("/missionaries/:id/command", requireAuth(), async (c) => {
 
   if (command.length > 2000) {
     return c.json({ error: "Command must be 2000 characters or less." }, 400);
+  }
+
+  // Check rate limit
+  const rateLimitResult = await missionaryCommandRateLimit(
+    member.id,
+    missionary.id
+  );
+  if (rateLimitResult) {
+    c.header("Retry-After", String(rateLimitResult.retryAfter));
+    return c.json(rateLimitResult, 429);
   }
 
   // Enqueue command

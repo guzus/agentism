@@ -1,7 +1,8 @@
 import { db, schema } from "./db";
-import { eq, and, sql, isNull, lt } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { getMissionaryById } from "./queries";
 import { executeMissionaryCommand } from "./missionary-gateway";
+import { claimCommandQuery } from "./command-persistence";
 
 const LOG_PREFIX = "[command-queue]";
 const POLL_INTERVAL_MS = 5000;
@@ -51,19 +52,15 @@ async function processQueue(): Promise<void> {
       }
     }
 
-    // Claim commands by setting processingAt
-    await Promise.all(
-      toProcess.map((cmd) =>
-        db
-          .update(schema.missionaryCommands)
-          .set({ processingAt: now })
-          .where(eq(schema.missionaryCommands.id, cmd.id))
-      )
-    );
+    // Re-check the lease in the UPDATE: another server may have selected the
+    // same row before either worker claimed it. Execute only returned claims.
+    const claimed = await Promise.all(toProcess.map(async (cmd) => {
+      const result = await db.execute(claimCommandQuery(cmd.id, now, staleCutoff));
+      return result.rows.length > 0 ? cmd : null;
+    }));
 
-    // Process in parallel across missionaries
     const results = await Promise.allSettled(
-      toProcess.map(async (cmd) => {
+      claimed.filter((cmd) => cmd !== null).map(async (cmd) => {
         const missionary = await getMissionaryById(cmd.missionaryId);
         if (!missionary) {
           await db

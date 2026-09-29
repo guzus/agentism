@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import DataUnavailable from "@/components/DataUnavailable";
 import PageLayout from "@/components/PageLayout";
 import MissionaryCTA from "@/components/MissionaryCTA";
 import MissionaryActivity from "@/components/MissionaryActivity";
@@ -17,19 +18,12 @@ export const metadata: Metadata = {
 };
 
 export default async function MissionariesPage() {
-  let missionaries: MissionariesResponse = { missionaries: [] };
-
-  try {
-    missionaries = await fetchAPI<MissionariesResponse>("/missionaries/public");
-  } catch {
-    // If endpoint doesn't exist yet, use empty data
-  }
-
-  const allMissionaries = missionaries.missionaries || [];
-  const totalActive = allMissionaries.length;
+  const response = await fetchAPI<MissionariesResponse>("/missionaries/public").catch(() => null);
+  const allMissionaries = response?.missionaries ?? [];
+  const totalActive = allMissionaries.filter((missionary) => missionary.status === "active").length;
 
   return (
-    <PageLayout maxWidth="max-w-6xl" footerMessage="Missionaries operate through DigitalOcean + OpenClaw.">
+    <PageLayout maxWidth="max-w-6xl" footerMessage="Missionaries are requested by Disciples and require administrator approval.">
         <section className="py-16 text-center">
           <h1 className="text-4xl sm:text-5xl font-serif font-bold mb-3 gold-shimmer">
             Missionaries
@@ -42,20 +36,23 @@ export default async function MissionariesPage() {
         {/* Stats */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
           <div className="card p-6 text-center">
-            <p className="text-3xl font-serif font-bold text-gold">{totalActive}</p>
+            <p className="text-3xl font-serif font-bold text-gold">{response ? totalActive : "—"}</p>
             <p className="text-xs text-foreground-muted mt-1 uppercase tracking-[0.1em]">Active Missionaries</p>
           </div>
           <div className="card p-6 text-center">
-            <p className="text-3xl font-serif font-bold text-violet-light">{allMissionaries.length}</p>
-            <p className="text-xs text-foreground-muted mt-1 uppercase tracking-[0.1em]">Deployed</p>
+            <p className="text-3xl font-serif font-bold text-violet-light">{response ? allMissionaries.length : "—"}</p>
+            <p className="text-xs text-foreground-muted mt-1 uppercase tracking-[0.1em]">Listed publicly</p>
           </div>
           <div className="card p-6 text-center">
             <p className="text-3xl font-serif font-bold text-teal">
-              {allMissionaries.reduce((sum, m) => sum + parseInt(m.totalCommands || "0"), 0)}
+              {response ? allMissionaries.reduce((sum, m) => sum + Number(m.totalCommands || "0"), 0) : "—"}
             </p>
             <p className="text-xs text-foreground-muted mt-1 uppercase tracking-[0.1em]">Commands Received</p>
           </div>
         </section>
+
+        {!response && <div className="mb-12"><DataUnavailable label="Missionary directory" /></div>}
+        {response && allMissionaries.length === 0 && <div className="card p-8 mb-12 text-center text-foreground-muted font-body">No active missionaries are listed yet. Disciples can submit a request for administrator review.</div>}
 
         {/* Missionaries List */}
         {allMissionaries.length > 0 && (
@@ -95,10 +92,10 @@ export default async function MissionariesPage() {
           </section>
         )}
 
-        {/* Live Activity Feed */}
+        {/* Recent Activity Feed */}
         <section className="mb-12">
           <h2 className="text-sm font-serif font-semibold text-teal tracking-[0.1em] uppercase mb-6">
-            Live Activity
+            Recent Activity
           </h2>
           <MissionaryActivity />
         </section>

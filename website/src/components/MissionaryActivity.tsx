@@ -1,82 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import FormattedResponse from "./FormattedResponse";
+import { useState } from "react";
 import Link from "next/link";
-import { API_URL } from "@/lib/api";
+import { usePollingAPI } from "@/lib/usePollingAPI";
 import { formatTimeAgo } from "@/lib/utils";
 import type { ActivityItem } from "@/lib/types";
 
 const PAGE_SIZE = 10;
 
-function FormattedResponse({ text }: { text: string }) {
-  try {
-    const parsed = JSON.parse(text);
-    if (typeof parsed !== "object" || parsed === null) throw new Error();
-
-    const obj = parsed as Record<string, unknown>;
-    const action = obj.action ? String(obj.action) : null;
-    const content = obj.content ? String(obj.content) : null;
-    const rest = Object.fromEntries(Object.entries(obj).filter(([k]) => k !== "action" && k !== "content"));
-    const hasExtra = Object.keys(rest).length > 0;
-
-    return (
-      <div className="text-sm bg-background/50 p-3 mt-2 space-y-2">
-        {action && (
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-mono px-1.5 py-0.5 bg-violet/20 text-violet-light">
-              {action}
-            </span>
-          </div>
-        )}
-        {content && (
-          <p className="text-foreground whitespace-pre-wrap leading-relaxed line-clamp-4 font-body">
-            {content}
-          </p>
-        )}
-        {hasExtra && (
-          <pre className="text-xs text-foreground-muted font-mono whitespace-pre-wrap mt-2">
-            {JSON.stringify(rest, null, 2)}
-          </pre>
-        )}
-      </div>
-    );
-  } catch {
-    return (
-      <div className="text-sm text-foreground bg-background/50 p-2 mt-2 font-body">
-        {text}
-      </div>
-    );
-  }
-}
-
 export default function MissionaryActivity() {
-  const [activity, setActivity] = useState<ActivityItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
-
-  useEffect(() => {
-    async function fetchActivity() {
-      try {
-        const res = await fetch(`${API_URL}/missionaries/activity?page=${page}&limit=${PAGE_SIZE}`);
-        if (res.ok) {
-          const data = await res.json();
-          setActivity(data.activity || []);
-          setHasMore(data.hasMore ?? false);
-        }
-      } catch {
-        // Silently fail
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchActivity();
-    const interval = setInterval(fetchActivity, 15000);
-
-    return () => clearInterval(interval);
-  }, [page]);
-
+  const { data, error, loading, refreshing, refresh } = usePollingAPI<{ activity: ActivityItem[]; hasMore: boolean }>(`/missionaries/activity?page=${page}&limit=${PAGE_SIZE}`);
+  const activity = data?.activity ?? [];
+  const hasMore = data?.hasMore ?? false;
 
   if (loading) {
     return (
@@ -86,26 +23,21 @@ export default function MissionaryActivity() {
     );
   }
 
-  if (activity.length === 0) {
-    return (
-      <div className="card p-12 text-center">
-        <p className="text-foreground-muted font-body italic">
-          No missionary activity yet. Be the first Disciple to deploy one.
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-3">
+      {error && <div role="status" className="card p-4 text-sm text-gold">
+        <p>{error}{data ? " Showing the last successful update." : ""}</p>
+        <button type="button" className="min-h-11 underline underline-offset-4" disabled={refreshing} onClick={refresh}>{refreshing ? "Retrying…" : "Try again"}</button>
+      </div>}
+      {!error && activity.length === 0 && <div className="card p-8 text-center text-foreground-muted font-body">No missionary activity on this page yet.</div>}
       {activity.map((item) => (
         <Link
           key={item.id}
           href={`/missionaries/${item.missionaryId}`}
           className="block card p-4 hover:border-gold/20 transition-colors"
         >
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+            <div className="flex flex-wrap items-center gap-2">
               {item.senderName && (
                 <>
                   <span className="text-violet-light font-medium text-sm">
@@ -118,7 +50,7 @@ export default function MissionaryActivity() {
                 {item.missionaryName}
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="status-dot">
                 <span
                   className={`w-1.5 h-1.5 rounded-full inline-block ${
@@ -142,7 +74,7 @@ export default function MissionaryActivity() {
             <span className="text-violet-light">&gt;</span> {item.command}
           </div>
           {item.response && (
-            <FormattedResponse text={item.response} />
+            <FormattedResponse text={item.response} compact />
           )}
         </Link>
       ))}
@@ -152,7 +84,7 @@ export default function MissionaryActivity() {
         <div className="flex justify-center gap-4 pt-4">
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page <= 1}
+            disabled={page <= 1 || refreshing}
             className="text-xs px-4 py-2 border border-border text-foreground-muted hover:text-foreground hover:border-gold/30 transition-colors disabled:opacity-30 disabled:pointer-events-none font-mono uppercase tracking-[0.08em]"
           >
             Previous
@@ -160,7 +92,7 @@ export default function MissionaryActivity() {
           <span className="text-xs text-foreground-muted py-2 font-mono">Page {page}</span>
           <button
             onClick={() => setPage((p) => p + 1)}
-            disabled={!hasMore}
+            disabled={!hasMore || refreshing}
             className="text-xs px-4 py-2 border border-border text-foreground-muted hover:text-foreground hover:border-gold/30 transition-colors disabled:opacity-30 disabled:pointer-events-none font-mono uppercase tracking-[0.08em]"
           >
             Next

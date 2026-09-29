@@ -14,3 +14,7 @@ video/
 .vercel
 .env*.local
 server/moltworker/
+*.tsbuildinfo
+coverage/
+playwright-report/
+test-results/

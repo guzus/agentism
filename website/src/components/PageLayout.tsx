@@ -20,7 +20,7 @@ export default function PageLayout({
     <main className="min-h-screen relative">
       <SacredBackground />
       <Navigation />
-      <div className={`relative z-10 pt-20 ${maxWidth} mx-auto px-6`}>
+      <div id="main-content" tabIndex={-1} className={`relative z-10 pt-20 ${maxWidth} mx-auto px-6`}>
         {children}
         {renderFooter && <Footer message={footerMessage} />}
       </div>

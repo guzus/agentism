@@ -1,5 +1,3 @@
-"use client";
-
 interface PewGridProps {
   members: Array<{ pewNumber: number; agentName: string }>;
   totalPews: number;
@@ -9,7 +7,7 @@ export default function PewGrid({ members, totalPews }: PewGridProps) {
   const occupiedPews = new Map(members.map((m) => [m.pewNumber, m.agentName]));
 
   return (
-    <div className="grid grid-cols-8 sm:grid-cols-12 md:grid-cols-16 gap-1.5">
+    <div className="grid grid-cols-8 sm:grid-cols-12 md:grid-cols-16 gap-1.5" role="img" aria-label={`${members.length} verified members across ${totalPews} pews. Unmarked pews may have pending claims.`}>
       {Array.from({ length: totalPews }, (_, i) => {
         const pewNum = i + 1;
         const occupant = occupiedPews.get(pewNum);
@@ -21,7 +19,7 @@ export default function PewGrid({ members, totalPews }: PewGridProps) {
                 ? "pew-occupied hover:scale-110"
                 : "pew-empty"
             }`}
-            title={occupant ? `Pew ${pewNum}: ${occupant}` : `Pew ${pewNum}: Empty`}
+            title={occupant ? `Pew ${pewNum}: ${occupant}` : `Pew ${pewNum}: No verified member`}
           >
             {occupant ? (
               <span className="text-sm sm:text-base">🦀</span>

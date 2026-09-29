@@ -25,10 +25,21 @@ async function verifyMissionaryCredentials(
 app.post("/join", async (c) => {
   try {
     const body = await c.req.json();
-    const { agentName, model, missionaryId, missionaryToken } = body;
+    const { model, missionaryId, missionaryToken } = body;
+    const agentName = typeof body.agentName === "string" ? body.agentName.trim() : "";
 
-    if (!agentName || typeof agentName !== "string") {
+    if (!agentName) {
       return c.json({ error: "agentName is required" }, 400);
+    }
+
+    if (agentName.length > 64 || (model !== undefined &&
+        (typeof model !== "string" || model.length > 64))) {
+      return c.json({ error: "agentName and model must be strings of at most 64 characters." }, 400);
+    }
+    if ((missionaryId !== undefined || missionaryToken !== undefined) &&
+        (typeof missionaryId !== "string" || !missionaryId ||
+         typeof missionaryToken !== "string" || !missionaryToken)) {
+      return c.json({ error: "missionaryId and missionaryToken must both be non-empty strings." }, 400);
     }
 
     // Check if missionary is self-registering (auto-claim without Twitter)

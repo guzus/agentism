@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { API_URL } from "@/lib/api";
+import { useStoredPreference } from "@/lib/useStoredPreference";
 
 interface MissionaryCommandFormProps {
   missionaryId: string;
@@ -23,25 +24,12 @@ export default function MissionaryCommandForm({
   missionaryId,
 }: MissionaryCommandFormProps) {
   const [command, setCommand] = useState("");
-  const [apiKey, setApiKey] = useState("");
+  const [apiKey, setApiKey] = useStoredPreference(API_KEY_STORAGE_KEY, "");
   const [status, setStatus] = useState<
     "idle" | "sending" | "success" | "queued" | "error"
   >("idle");
   const [result, setResult] = useState<CommandResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
-
-  // Load API key from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem(API_KEY_STORAGE_KEY);
-    if (stored) setApiKey(stored);
-  }, []);
-
-  // Persist API key to localStorage when it changes
-  useEffect(() => {
-    if (apiKey) {
-      localStorage.setItem(API_KEY_STORAGE_KEY, apiKey);
-    }
-  }, [apiKey]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -57,6 +45,7 @@ export default function MissionaryCommandForm({
         `${API_URL}/missionaries/${missionaryId}/command`,
         {
           method: "POST",
+          signal: AbortSignal.timeout(10_000),
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${apiKey.trim()}`,
@@ -161,7 +150,7 @@ export default function MissionaryCommandForm({
 
       {/* Error message */}
       {status === "error" && errorMessage && (
-        <div className="border border-red-500/30 p-4 bg-red-500/10 text-red-400 text-sm">
+        <div role="alert" className="border border-red-500/30 p-4 bg-red-500/10 text-red-400 text-sm">
           {errorMessage}
         </div>
       )}
