@@ -5,6 +5,7 @@ import {
   verifyAdminPassword,
   createAdminSession,
   verifyAdminSession,
+  invalidateAdminSession,
 } from "../lib/admin-auth";
 import { getPendingMissionaryRequests, getMissionaryById } from "../lib/queries";
 import {
@@ -65,9 +66,9 @@ function pollForIpAndUpdate(dropletId: number, missionaryId: string): void {
 // POST /admin/login - Login with password, get session token
 app.post("/admin/login", async (c) => {
   const body = await c.req.json().catch(() => ({})) as Record<string, unknown>;
-  const password = body.password as string | undefined;
+  const password = body.password;
 
-  if (!password) {
+  if (typeof password !== "string" || !password) {
     return c.json({ error: "Password is required." }, 400);
   }
 
@@ -76,11 +77,23 @@ app.post("/admin/login", async (c) => {
   }
 
   const token = createAdminSession();
+  c.header("Cache-Control", "no-store");
 
   return c.json({
     token,
     message: "Login successful. Use 'Admin {token}' in Authorization header.",
   });
+});
+
+// POST /admin/logout - Revoke the current process-local session.
+app.post("/admin/logout", (c) => {
+  const token = getSessionToken(c);
+  if (!verifyAdminSession(token)) {
+    return c.json({ error: "Unauthorized. Admin session required." }, 401);
+  }
+  invalidateAdminSession(token!);
+  c.header("Cache-Control", "no-store");
+  return c.json({ message: "Logged out." });
 });
 
 // GET /admin/settings/ssh-keys - List DigitalOcean SSH key IDs

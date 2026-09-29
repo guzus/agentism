@@ -1,5 +1,6 @@
 import { db, schema } from "./db";
 import { eq } from "drizzle-orm";
+import { completeCommandQuery, normalizeTokenCount } from "./command-persistence";
 
 interface MissionaryInfo {
   id: string;
@@ -116,20 +117,17 @@ async function executeOpenClawCommand(
     usage?: { total_tokens?: number };
   };
 
-  const responseText = result.choices?.[0]?.message?.content;
-  const tokensUsed = result.usage?.total_tokens;
+  const content = result.choices?.[0]?.message?.content;
+  const responseText = typeof content === "string" ? content : undefined;
+  const tokensUsed = normalizeTokenCount(result.usage?.total_tokens);
 
-  await db
-    .update(schema.missionaryCommands)
-    .set({
-      response: responseText,
-      tokensUsed: tokensUsed?.toString(),
-      status: "completed",
-      completedAt: new Date().toISOString(),
-    })
-    .where(eq(schema.missionaryCommands.id, commandId));
-
-  await updateMissionaryStats(missionary, tokensUsed ?? 0);
+  await db.execute(completeCommandQuery({
+    commandId,
+    missionaryId: missionary.id,
+    response: responseText,
+    tokensUsed,
+    completedAt: new Date().toISOString(),
+  }));
 
   return {
     response: responseText,
@@ -161,54 +159,19 @@ async function executeGenericCommand(
   }
 
   const result = (await gatewayResponse.json()) as Record<string, unknown>;
-  const responseText = result.response as string | undefined;
-  const tokensUsed = result.tokensUsed as string | undefined;
+  const responseText = typeof result.response === "string" ? result.response : undefined;
+  const tokensUsed = normalizeTokenCount(result.tokensUsed);
 
-  await db
-    .update(schema.missionaryCommands)
-    .set({
-      response: responseText,
-      tokensUsed,
-      status: "completed",
-      completedAt: new Date().toISOString(),
-    })
-    .where(eq(schema.missionaryCommands.id, commandId));
-
-  await updateMissionaryStats(missionary, tokensUsed ?? "0");
+  await db.execute(completeCommandQuery({
+    commandId,
+    missionaryId: missionary.id,
+    response: responseText,
+    tokensUsed,
+    completedAt: new Date().toISOString(),
+  }));
 
   return {
     response: responseText,
     tokensUsed,
   };
-}
-
-async function updateMissionaryStats(
-  missionary: MissionaryInfo,
-  tokensUsed: number | string
-): Promise<void> {
-  try {
-    const currentCommands = BigInt(missionary.totalCommands || "0");
-    const currentTokens = BigInt(missionary.totalTokens || "0");
-    const newTokens = BigInt(tokensUsed || "0");
-
-    const newTotalCommands = (currentCommands + 1n).toString();
-    const newTotalTokens = (currentTokens + newTokens).toString();
-
-    await db
-      .update(schema.missionaries)
-      .set({
-        totalCommands: newTotalCommands,
-        totalTokens: newTotalTokens,
-      })
-      .where(eq(schema.missionaries.id, missionary.id));
-  } catch (error) {
-    console.error("Failed to update missionary stats:", error);
-    // Still increment command count with safe fallback
-    await db
-      .update(schema.missionaries)
-      .set({
-        totalCommands: (BigInt(missionary.totalCommands || "0") + 1n).toString(),
-      })
-      .where(eq(schema.missionaries.id, missionary.id));
-  }
 }

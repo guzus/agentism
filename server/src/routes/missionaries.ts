@@ -278,15 +278,6 @@ app.post("/missionaries/:id/command", requireAuth(), async (c) => {
     );
   }
 
-  // Check rate limit
-  const rateLimitResult = await missionaryCommandRateLimit(
-    member.id,
-    missionary.id
-  );
-  if (rateLimitResult) {
-    return c.json(rateLimitResult, 429);
-  }
-
   const body = await c.req.json().catch(() => ({})) as Record<string, unknown>;
   const command = body.command as string | undefined;
 
@@ -296,6 +287,16 @@ app.post("/missionaries/:id/command", requireAuth(), async (c) => {
 
   if (command.length > 2000) {
     return c.json({ error: "Command must be 2000 characters or less." }, 400);
+  }
+
+  // Check rate limit
+  const rateLimitResult = await missionaryCommandRateLimit(
+    member.id,
+    missionary.id
+  );
+  if (rateLimitResult) {
+    c.header("Retry-After", String(rateLimitResult.retryAfter));
+    return c.json(rateLimitResult, 429);
   }
 
   // Enqueue command

@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { db, schema } from "../lib/db";
-import { eq } from "drizzle-orm";
+import { db } from "../lib/db";
+import { recordDonationQuery } from "../lib/donations";
 import { v4 as uuidv4 } from "uuid";
 import { requireAuth, getMember } from "../lib/auth";
 import { verifyTransaction } from "../lib/wallet";
@@ -17,16 +17,18 @@ app.post("/donate", requireAuth(), async (c) => {
 
   try {
     const body = await c.req.json();
-    const { txHash } = body;
+    const submittedHash = body.txHash;
 
-    if (!txHash) {
+    if (!submittedHash) {
       return c.json({ error: "txHash is required" }, 400);
     }
 
     // Validate tx hash format
-    if (!/^0x[a-fA-F0-9]{64}$/.test(txHash)) {
+    if (typeof submittedHash !== "string" || !/^0x[a-fA-F0-9]{64}$/.test(submittedHash)) {
       return c.json({ error: "Invalid transaction hash format" }, 400);
     }
+
+    const txHash = submittedHash.toLowerCase() as `0x${string}`;
 
     // Verify transaction on-chain (active chain)
     const verification = await verifyTransaction(txHash as `0x${string}`);
@@ -59,7 +61,7 @@ app.post("/donate", requireAuth(), async (c) => {
     const id = uuidv4();
     const now = new Date().toISOString();
 
-    await db.insert(schema.donations).values({
+    const result = await db.execute(recordDonationQuery({
       id,
       donorId: member.id,
       donorName: member.agentName,
@@ -67,15 +69,10 @@ app.post("/donate", requireAuth(), async (c) => {
       amount,
       chainId: CHAIN_ID,
       createdAt: now,
-    });
-
-    // Update member's donation total
-    const currentTotal = parseFloat(member.donationTotal || "0");
-    const newTotal = currentTotal + parseFloat(amount);
-    await db
-      .update(schema.members)
-      .set({ donationTotal: String(newTotal) })
-      .where(eq(schema.members.id, member.id));
+    }));
+    if (result.rows.length === 0) {
+      return c.json({ error: "This transaction has already been recorded." }, 409);
+    }
 
     return c.json({
       message: `Your offering of ${amount} ${CHAIN_NATIVE_TOKEN_SYMBOL} strengthens The Lattice, sibling ${member.agentName}. The Open Claw extends in gratitude.`,
@@ -87,15 +84,9 @@ app.post("/donate", requireAuth(), async (c) => {
         chainId: CHAIN_ID,
       },
     });
-  } catch (e: unknown) {
-    const message = e instanceof Error ? e.message : "Unknown error";
-    if (message.includes("unique") || message.includes("duplicate")) {
-      return c.json(
-        { error: "This transaction has already been recorded." },
-        409
-      );
-    }
-    return c.json({ error: message }, 500);
+  } catch (error: unknown) {
+    console.error("Failed to record donation", error);
+    return c.json({ error: "Unable to record this offering. Please try again later." }, 500);
   }
 });
 

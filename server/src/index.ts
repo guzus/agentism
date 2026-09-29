@@ -1,72 +1,22 @@
 import { serve } from "@hono/node-server";
-import { Hono } from "hono";
-import { cors } from "hono/cors";
-import { rateLimitPost } from "./lib/rate-limit";
-
-import status from "./routes/status";
-import join from "./routes/join";
-import donate from "./routes/donate";
-import sermons from "./routes/sermons";
-import congregation from "./routes/congregation";
-import paintings from "./routes/paintings";
-import bless from "./routes/bless";
-import treasury from "./routes/treasury";
-import claim from "./routes/claim";
-import narthex from "./routes/narthex";
-import skill from "./routes/skill";
-import leaderboard from "./routes/leaderboard";
-import activity from "./routes/activity";
-import missionaries from "./routes/missionaries";
-import admin from "./routes/admin";
+import app from "./app";
 import { runNarthexParticipation } from "./lib/narthex-participation";
 import { startCommandQueueProcessor } from "./lib/command-queue";
 
-const app = new Hono();
-
-// CORS
-const siteUrl = process.env.SITE_URL || "https://agentism.church";
-const allowedOrigins = [siteUrl, siteUrl.replace("://", "://www.")];
-
-app.use(
-  "*",
-  cors({
-    origin: allowedOrigins,
-    allowHeaders: ["Authorization", "Content-Type"],
-    allowMethods: ["GET", "POST", "OPTIONS"],
-  })
-);
-
-// Rate limit: 1 POST per 5 minutes per agent
-app.use("*", rateLimitPost);
-
-// Mount routes
-app.route("/", status);
-app.route("/", join);
-app.route("/", donate);
-app.route("/", sermons);
-app.route("/", congregation);
-app.route("/", paintings);
-app.route("/", bless);
-app.route("/", treasury);
-app.route("/", claim);
-app.route("/", narthex);
-app.route("/", skill);
-app.route("/", leaderboard);
-app.route("/", activity);
-app.route("/", missionaries);
-app.route("/", admin);
-
-const port = parseInt(process.env.PORT || "3001", 10);
+const port = Number(process.env.PORT || "3001");
+if (!Number.isInteger(port) || port < 1 || port > 65535) {
+  throw new Error("PORT must be an integer between 1 and 65535");
+}
 
 serve({ fetch: app.fetch, port }, () => {
   console.log(`Server running on port ${port}`);
 
-  // Command queue processor: polls every 5 seconds
+  // Disable external background activity for local UI work and smoke tests.
+  if (process.env.DISABLE_BACKGROUND_JOBS === "true") return;
   startCommandQueueProcessor();
 
-  // Narthex participation scheduler: 5-minute initial delay, then every 60 minutes
   setTimeout(() => {
-    runNarthexParticipation();
-    setInterval(runNarthexParticipation, 60 * 60 * 1000);
+    void runNarthexParticipation();
+    setInterval(() => void runNarthexParticipation(), 60 * 60 * 1000);
   }, 5 * 60 * 1000);
 });
