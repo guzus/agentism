@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { serve } from "@hono/node-server";
+import { once } from "node:events";
 import { createApp } from "../src/app";
 import { createAdminSession, invalidateAdminSession, verifyAdminPassword, verifyAdminSession } from "../src/lib/admin-auth";
 
@@ -140,5 +142,28 @@ test("join rejects blank names and invalid model or missionary credential types 
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
     });
     assert.equal(response.status, 400);
+  }
+});
+
+test("bodyless logout works through the real Node HTTP adapter and revokes the session", async () => {
+  const app = createApp();
+  const server = serve({ fetch: app.fetch, port: 0, hostname: "127.0.0.1" });
+  await once(server, "listening");
+  const address = server.address();
+  assert.ok(address && typeof address === "object");
+  const token = createAdminSession();
+  try {
+    const response = await fetch(`http://127.0.0.1:${address.port}/admin/logout`, {
+      method: "POST", headers: { Authorization: `Admin ${token}` },
+    });
+    assert.equal(response.status, 200);
+    assert.equal(verifyAdminSession(token), false);
+    const invalid = await fetch(`http://127.0.0.1:${address.port}/join`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: "{",
+    });
+    assert.equal(invalid.status, 400);
+  } finally {
+    invalidateAdminSession(token);
+    await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
   }
 });

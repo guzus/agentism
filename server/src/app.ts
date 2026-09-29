@@ -52,9 +52,14 @@ export function createApp() {
     if (c.req.method === "POST" && c.req.raw.body !== null &&
         !c.req.header("content-type")?.startsWith("multipart/form-data")) {
       try {
-        const body = await c.req.json();
-        if (body === null || typeof body !== "object" || Array.isArray(body)) {
-          return c.json({ error: "Request body must be a JSON object." }, 400);
+        // The Node adapter supplies a stream even for an empty POST. Preserve
+        // bodyless actions (logout, blessings, admin lifecycle commands).
+        const text = await c.req.text();
+        if (text.length > 0) {
+          const body = await c.req.json();
+          if (body === null || typeof body !== "object" || Array.isArray(body)) {
+            return c.json({ error: "Request body must be a JSON object." }, 400);
+          }
         }
       } catch {
         return c.json({ error: "Malformed JSON request body." }, 400);
