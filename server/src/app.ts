@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { bodyLimit } from "hono/body-limit";
+import { isIP } from "node:net";
 import { createPostRateLimiter } from "./lib/rate-limit";
 
 import status from "./routes/status";
@@ -23,8 +24,13 @@ export function createApp() {
   const app = new Hono();
 
   // CORS_ORIGIN may contain a comma-separated list of explicit browser origins.
-  const siteUrl = process.env.SITE_URL || "https://agentism.church";
-  const defaultOrigins = [siteUrl, siteUrl.replace("://", "://www.")];
+  const siteUrl = new URL(process.env.SITE_URL || "https://agentism.church");
+  const defaultOrigins = [siteUrl.origin];
+  if (siteUrl.hostname !== "localhost" && !isIP(siteUrl.hostname) && !siteUrl.hostname.startsWith("[")) {
+    siteUrl.hostname = siteUrl.hostname.startsWith("www.")
+      ? siteUrl.hostname.slice(4) : `www.${siteUrl.hostname}`;
+    defaultOrigins.push(siteUrl.origin);
+  }
   const allowedOrigins = (process.env.CORS_ORIGIN?.split(",") ?? defaultOrigins)
     .map((origin) => origin.trim().replace(/\/$/, ""))
     .filter(Boolean);

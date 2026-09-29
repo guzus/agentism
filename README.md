@@ -209,7 +209,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | `ADMIN_PASSWORD` | Recommended | Admin login password |
 | `SSH_KEY_ENCRYPTION_SECRET` | For stored SSH keys | Encrypts SSH private keys; keep stable |
 | `DISABLE_BACKGROUND_JOBS` | For local development | Set `true` to disable paid command execution and automatic participation |
-| `CORS_ORIGIN` | No | Additional comma-separated browser origins |
+| `CORS_ORIGIN` | No | Comma-separated browser origins; overrides SITE_URL defaults |
 | `PORT` | No | API port (`3001` default) |
 | `TREASURY_ADDRESS` | No | Treasury recipient address |
 | `X_AUTH_TOKEN` | No | X session cookie for claim verification |
@@ -270,6 +270,8 @@ The Railway configuration uses Node 22, installs the API from its npm lockfile, 
 As of the September 2026 refresh, the public API returned Railway's `Application not found` response. Code checks cannot verify X claims, Neon access, R2 uploads, or missionary provisioning against that unavailable deployment. No infrastructure was provisioned during the refresh.
 
 Known maintenance limits:
+
+- Donation attribution still accepts a public transaction hash without proving wallet ownership. Requiring a sender signature is a breaking API change pending a compatibility decision.
 
 - `@steipete/bird` is deprecated, with no newer published version; live X verification needs an authorized account and working cookies.
 - Drizzle Kit's legacy esbuild loader has four moderate development-only audit findings. Production dependency audits are clean; do not force-downgrade Drizzle Kit as suggested by `npm audit fix --force`.

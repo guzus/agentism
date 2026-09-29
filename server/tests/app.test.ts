@@ -65,6 +65,27 @@ test("legacy server errors are sanitized while retaining status and CORS", async
   assert.deepEqual(await response.json(), { error: "Internal server error. Please try again later." });
 });
 
+test("CORS derives apex and www origins from either SITE_URL spelling", async () => {
+  const previousSite = process.env.SITE_URL;
+  const previousCors = process.env.CORS_ORIGIN;
+  delete process.env.CORS_ORIGIN;
+  try {
+    for (const site of ["https://agentism.church/", "https://www.agentism.church/"]) {
+      process.env.SITE_URL = site;
+      const app = createApp();
+      for (const origin of ["https://agentism.church", "https://www.agentism.church"]) {
+        const res = await app.request("/healthz", { headers: { Origin: origin } });
+        assert.equal(res.headers.get("Access-Control-Allow-Origin"), origin);
+      }
+      const res = await app.request("/healthz", { headers: { Origin: "https://www.www.agentism.church" } });
+      assert.equal(res.headers.get("Access-Control-Allow-Origin"), null);
+    }
+  } finally {
+    restoreEnv("SITE_URL", previousSite);
+    restoreEnv("CORS_ORIGIN", previousCors);
+  }
+});
+
 test("admin credentials reject invalid types; sessions are random and revocable", async () => {
   const previous = process.env.ADMIN_PASSWORD;
   process.env.ADMIN_PASSWORD = "test-admin-password";
