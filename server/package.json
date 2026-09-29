@@ -27,7 +27,7 @@
     "@types/sshpk": "^1.17.4",
     "drizzle-kit": "^0.31.11",
     "tsx": "^4.23.15",
-    "typescript": "^5.9.3"
+    "typescript": "^7.0.2"
   },
   "engines": {
     "node": ">=22.22.0 <25"
